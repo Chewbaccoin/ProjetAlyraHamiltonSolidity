@@ -1,9 +1,9 @@
-// test/PumpMusicRoyaltyToken.test.js
+// test/PumpMusicTokenFactory.test.js
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
-describe("PumpMusicRoyaltyToken", function () {
+describe("PumpMusicTokenFactory", function () {
     // Fixture qui sera réutilisé pour chaque test
     async function deployTokenFixture() {
         // Get signers

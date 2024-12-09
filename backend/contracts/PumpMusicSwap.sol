@@ -115,7 +115,7 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         require(amountIn > 0 && reserveIn > 0 && reserveOut > 0, "Invalid amounts");
         
         // Application des frais de 0.3%
-        uint256 amountInWithFee = amountIn * (1000 - SWAP_FEE);
+        uint256 amountInWithFee = amountIn * (1000 - SWAP_FEE);  // SWAP_FEE = 30
         uint256 numerator = amountInWithFee * reserveOut;
         uint256 denominator = (reserveIn * 1000) + amountInWithFee;
         
@@ -228,6 +228,7 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
     function getTokenPrice(address tokenAddress) external view returns (uint256) {
         LiquidityPool memory pool = liquidityPools[tokenAddress];
         require(pool.isActive && pool.tokenReserve > 0, "Invalid pool");
-        return (pool.usdcReserve * 1e18) / pool.tokenReserve;
+        // Scale USDC amount (6 decimals) up to 18 decimals before division
+        return (pool.usdcReserve * 1e18 * 1e12) / pool.tokenReserve;
     }
 }
