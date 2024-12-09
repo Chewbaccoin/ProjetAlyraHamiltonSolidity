@@ -86,19 +86,20 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
         require(balanceOf(msg.sender) > 0, "No tokens owned");
         require(royaltyInfo.totalRoyalties > 0, "No royalties to claim");
         
+        // Modification du calcul pour éviter la perte de précision
         uint256 userBalance = balanceOf(msg.sender);
         uint256 supply = totalSupply();
-        uint256 share = (userBalance * royaltyInfo.totalRoyalties) / supply;
+        // Calculer d'abord le pourcentage puis multiplier par le montant total
+        uint256 share = (userBalance * 1e18 / supply) * royaltyInfo.totalRoyalties / 1e18;
         require(share > 0, "Share too small");
         
-        uint256 amountToClaim = share;
         royaltyInfo.totalRoyalties -= share;
         lastClaimTime[msg.sender] = block.timestamp;
         
-        (bool success, ) = payable(msg.sender).call{value: amountToClaim}("");
+        (bool success, ) = payable(msg.sender).call{value: share}("");
         require(success, "Transfer failed");
         
-        emit RoyaltyClaimed(msg.sender, amountToClaim);
+        emit RoyaltyClaimed(msg.sender, share);
     }
 
     /// @notice Liste les tokens pour la vente

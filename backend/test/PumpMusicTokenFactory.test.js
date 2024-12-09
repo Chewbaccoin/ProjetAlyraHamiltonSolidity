@@ -90,34 +90,34 @@ describe("PumpMusicRoyaltyToken", function () {
 
         it("Should allow token purchase", async function () {
             const { royaltyToken, mockUSDC, artist, investor1, tokenPrice } = await loadFixture(deployTokenFixture);
-    
+        
             // List tokens for sale
             await royaltyToken.connect(artist).listTokensForSale(tokenPrice);
             
-            // Calcul du montant en tokens (18 décimales)
-            const purchaseAmount = ethers.parseEther("1000");
+            // Set purchase amount (in royalty token decimals - 18)
+            const purchaseAmount = ethers.parseEther("1000");  // 1000 tokens
             
-            // Calcul du coût total en USDC (1000 tokens * 1 USDC par token)
-            const usdcAmount = ethers.parseUnits("1000", 6);
+            // Calculate cost in USDC
+            // In the contract: cost = amount * tokenPrice
+            // purchaseAmount is 1000e18 (18 decimals)
+            // tokenPrice is 1e6 (6 decimals)
+            const cost = purchaseAmount * tokenPrice;
             
-            console.log("usdcAmount", usdcAmount);
-            console.log("tokenPrice", tokenPrice);
-
-
-            // Approuver le montant exact en USDC
+            // Mint enough USDC to the investor
+            await mockUSDC.mint(investor1.address, cost);
+            
+            // Approve exact amount needed
             await mockUSDC.connect(investor1).approve(
                 await royaltyToken.getAddress(),
-                usdcAmount
+                cost
             );
-
-
             
-            // Achat des tokens
+            // Purchase tokens
             await royaltyToken.connect(investor1).purchaseTokens(purchaseAmount);
             
-            // Vérifications
+            // Verify balances
             expect(await royaltyToken.balanceOf(investor1.address)).to.equal(purchaseAmount);
-            expect(await mockUSDC.balanceOf(artist.address)).to.equal(usdcAmount);
+            expect(await mockUSDC.balanceOf(artist.address)).to.equal(cost);
         });
     });
 
@@ -150,22 +150,29 @@ describe("PumpMusicRoyaltyToken", function () {
         it("Should allow claiming royalties", async function () {
             const { royaltyToken, artist, investor1 } = await loadFixture(deployTokenFixture);
     
-            // Setup initial state
-            await royaltyToken.connect(artist).transfer(investor1.address, ethers.parseEther("1000"));
+            // Transférer une plus grande quantité de tokens à l'investisseur (50% du supply)
+            const investorTokens = ethers.parseEther("500000000");
+            await royaltyToken.connect(artist).transfer(investor1.address, investorTokens);
             
-            // Envoyer de l'ETH au contrat pour les frais de plateforme
+            // Envoyer plus d'ETH au contrat pour les royalties
             await artist.sendTransaction({
                 to: await royaltyToken.getAddress(),
-                value: ethers.parseEther("10")
+                value: ethers.parseEther("100")  // Augmenté à 100 ETH
             });
             
-            await royaltyToken.connect(artist).distributeRoyalties(ethers.parseEther("1"));
+            // Distribuer une plus grande quantité de royalties
+            const royaltyAmount = ethers.parseEther("10");  // Augmenté à 10 ETH
+            await royaltyToken.connect(artist).distributeRoyalties(royaltyAmount);
             
-            // Record balances and claim
+            // Enregistrer le solde avant la réclamation
             const balanceBefore = await ethers.provider.getBalance(investor1.address);
+            
+            // Réclamer les royalties
             await royaltyToken.connect(investor1).claimRoyalties();
+            
             const balanceAfter = await ethers.provider.getBalance(investor1.address);
             
+            // Vérifier que le solde a augmenté
             expect(balanceAfter).to.be.gt(balanceBefore);
         });
 
