@@ -67,9 +67,9 @@ async function main() {
     console.log("Swap:", await swap.getAddress());
     console.log("Example Token:", tokenAddress);
 
-    // Verify contracts on Etherscan
+    // Verify contracts on Basescan
     if (hre.network.name !== "hardhat" && hre.network.name !== "localhost") {
-        console.log("\nVerifying contracts on Etherscan...");
+        console.log("\nVerifying contracts on Basescan...");
         
         await hre.run("verify:verify", {
             address: await mockUSDC.getAddress(),
