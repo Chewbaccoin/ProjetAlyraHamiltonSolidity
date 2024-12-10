@@ -1,0 +1,47 @@
+.header {
+  @apply fixed top-0 w-full bg-gray-50/95 dark:bg-black/50 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 z-50;
+}
+
+.header-container {
+  @apply w-full px-6 lg:px-8;
+}
+
+.header-content {
+  @apply flex justify-between items-center h-16;
+}
+
+.logo-container {
+  @apply flex items-center;
+}
+
+.logo-icon {
+  @apply w-8 h-8 text-purple-600 dark:text-purple-500;
+}
+
+.logo-text {
+  @apply ml-2 text-xl font-bold text-gray-900 dark:text-white;
+}
+
+.actions-container {
+  @apply flex items-center gap-4;
+}
+
+.theme-toggle {
+  @apply p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800;
+}
+
+.theme-icon {
+  @apply w-5 h-5 text-gray-800 dark:text-gray-200;
+}
+
+.connect-button {
+  @apply bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg;
+}
+
+.chain-button {
+  @apply bg-gray-200 dark:bg-gray-800 px-3 py-1 rounded-lg text-sm;
+}
+
+.wallet-container {
+  @apply flex items-center gap-2;
+} 

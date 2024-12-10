@@ -1,5 +1,6 @@
 // hardhat.config.js
 require("@nomicfoundation/hardhat-toolbox");
+require("@openzeppelin/hardhat-upgrades");
 require("dotenv").config();
 
 const PRIVATE_KEY_LOCALHOST_HARDHAT = process.env.PRIVATE_KEY_LOCALHOST_HARDHAT || "0000000000000000000000000000000000000000000000000000000000000000";
@@ -12,7 +13,10 @@ module.exports = {
         coverage: {
           enabled: true,
           testfiles: ["test/**/*.js", "test/**/*.ts"],
-          skipFiles: ['mocks/', 'interfaces/']
+          skipFiles: [
+              'mocks/',
+              'interfaces/'
+          ]
         },
         settings: {
             optimizer: {
