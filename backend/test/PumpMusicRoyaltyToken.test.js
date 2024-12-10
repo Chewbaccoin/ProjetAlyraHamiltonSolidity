@@ -4,7 +4,7 @@ const { ethers } = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("PumpMusicRoyaltyToken", function () {
-    // Fixture qui sera réutilisé pour chaque test
+    // Fixture which will be reused for each test
     async function deployTokenFixture() {
         // Get signers
         const [owner, artist, investor1, investor2] = await ethers.getSigners();

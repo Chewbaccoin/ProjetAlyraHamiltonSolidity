@@ -7,15 +7,15 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @title PumpMusicSwap
-/// @notice Contrat de gestion des échanges de tokens de royalties
-/// @dev Implémente un système de pools de liquidité et de swap
+/// @notice Contract for managing royalty token exchanges
+/// @dev Implements a liquidity pool and swap system
 contract PumpMusicSwap is Ownable, ReentrancyGuard {
     using Math for uint256;
 
-    /// @notice Structure pour les pools de liquidité
-    /// @param tokenReserve Réserve de tokens de royalties
-    /// @param usdcReserve Réserve d'USDC
-    /// @param isActive État d'activation du pool
+    /// @notice Structure for liquidity pools
+    /// @param tokenReserve Royalty token reserve
+    /// @param usdcReserve USDC reserve
+    /// @param isActive Pool activation status
     struct LiquidityPool {
         uint256 tokenReserve;
         uint256 usdcReserve;

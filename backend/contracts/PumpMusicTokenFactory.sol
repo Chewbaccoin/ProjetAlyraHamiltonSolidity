@@ -3,27 +3,33 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PumpMusicRoyaltyToken.sol";
+import "./ArtistSBT.sol";
 
 /// @title PumpMusicTokenFactory
-/// @notice Factory pour créer de nouveaux tokens de royalties musicales
-/// @dev Permet la création et le suivi des tokens par artiste
+/// @notice Factory for creating new music royalty tokens
+/// @dev Enables creation and tracking of tokens by artist
 contract PumpMusicTokenFactory is Ownable {
-    // Mapping pour suivre les tokens créés par artiste
+    /// @notice Reference to the artists' SBT contract
+    /// @dev Immutable as the address will never change after deployment
+    ArtistSBT public immutable artistSBT;
+    // Mapping to track tokens created by artist
     mapping(address => PumpMusicRoyaltyToken[]) public artistTokens;
     
     event TokenCreated(address indexed artist, address tokenAddress);
 
-    constructor() Ownable(msg.sender) {}
+    constructor(address _artistSBT) Ownable(msg.sender) {
+        artistSBT = ArtistSBT(_artistSBT);
+    }
 
-    /// @notice Crée un nouveau token de royalties
-    /// @dev Déploie un nouveau contrat PumpMusicRoyaltyToken
-    /// @param name Nom du token
-    /// @param symbol Symbole du token
-    /// @param royaltyPercentage Pourcentage des royalties
-    /// @param duration Durée de validité des droits
-    /// @param tokenPrice Prix initial du token
-    /// @param usdcAddress Adresse du contrat USDC
-    /// @return address Adresse du nouveau token créé
+    /// @notice Creates a new royalty token
+    /// @dev Deploys a new PumpMusicRoyaltyToken contract
+    /// @param name Token name
+    /// @param symbol Token symbol
+    /// @param royaltyPercentage Royalty percentage
+    /// @param duration Rights validity duration
+    /// @param tokenPrice Initial token price
+    /// @param usdcAddress USDC contract address
+    /// @return address Address of the newly created token
     function createToken(
         string memory name,
         string memory symbol,
@@ -32,6 +38,10 @@ contract PumpMusicTokenFactory is Ownable {
         uint256 tokenPrice,
         address usdcAddress
     ) external returns (address) {
+        // Vérifie que l'appelant possède un SBT d'artiste
+        // Cette vérification utilise la fonction isArtist du contrat SBT
+        require(artistSBT.isArtist(msg.sender), "Only verified artists can create tokens");
+
         // Validation des paramètres
         require(bytes(name).length > 0, "Name cannot be empty");
         require(bytes(symbol).length > 0, "Symbol cannot be empty");
@@ -57,9 +67,9 @@ contract PumpMusicTokenFactory is Ownable {
         return address(token);
     }
 
-    /// @notice Récupère tous les tokens d'un artiste
-    /// @param artist Adresse de l'artiste
-    /// @return PumpMusicRoyaltyToken[] Liste des tokens de l'artiste
+    /// @notice Retrieves all tokens of an artist
+    /// @param artist Artist's address
+    /// @return PumpMusicRoyaltyToken[] List of artist's tokens
     function getArtistTokens(address artist) external view returns (PumpMusicRoyaltyToken[] memory) {
         return artistTokens[artist];
     }

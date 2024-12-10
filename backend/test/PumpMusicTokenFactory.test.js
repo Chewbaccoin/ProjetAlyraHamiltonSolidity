@@ -150,29 +150,29 @@ describe("PumpMusicTokenFactory", function () {
         it("Should allow claiming royalties", async function () {
             const { royaltyToken, artist, investor1 } = await loadFixture(deployTokenFixture);
     
-            // Transférer une plus grande quantité de tokens à l'investisseur (50% du supply)
+            // Transfer a larger amount of tokens to investor (50% of supply)
             const investorTokens = ethers.parseEther("500000000");
             await royaltyToken.connect(artist).transfer(investor1.address, investorTokens);
             
-            // Envoyer plus d'ETH au contrat pour les royalties
+            // Send more ETH to contract for royalties
             await artist.sendTransaction({
                 to: await royaltyToken.getAddress(),
-                value: ethers.parseEther("100")  // Augmenté à 100 ETH
+                value: ethers.parseEther("100")  // Increased to 100 ETH
             });
             
-            // Distribuer une plus grande quantité de royalties
-            const royaltyAmount = ethers.parseEther("10");  // Augmenté à 10 ETH
+            // Distribute larger amount of royalties
+            const royaltyAmount = ethers.parseEther("10");  // Increased to 10 ETH
             await royaltyToken.connect(artist).distributeRoyalties(royaltyAmount);
             
-            // Enregistrer le solde avant la réclamation
+            // Record balance before claim
             const balanceBefore = await ethers.provider.getBalance(investor1.address);
             
-            // Réclamer les royalties
+            // Claim royalties
             await royaltyToken.connect(investor1).claimRoyalties();
             
             const balanceAfter = await ethers.provider.getBalance(investor1.address);
             
-            // Vérifier que le solde a augmenté
+            // Verify balance increased
             expect(balanceAfter).to.be.gt(balanceBefore);
         });
 

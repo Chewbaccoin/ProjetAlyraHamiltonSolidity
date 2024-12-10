@@ -8,14 +8,14 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 
 /// @title PumpMusicRoyaltyToken
-/// @notice Contrat principal pour la gestion des tokens de royalties musicales
-/// @dev Hérite d'ERC20 pour la fonctionnalité de token, Ownable pour la gestion des droits, 
-///      et ReentrancyGuard pour la sécurité
+/// @notice Main contract for music royalty token management
+/// @dev Inherits from ERC20 for token functionality, Ownable for rights management,
+///      and ReentrancyGuard for security
 contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
-    /// @notice Structure contenant les informations relatives aux royalties
-    /// @param expirationDate Date de fin des droits de royalties
-    /// @param royaltyPercentage Pourcentage des royalties représenté par le token (en base points)
-    /// @param totalRoyalties Montant total des royalties non distribuées
+    /// @notice Structure containing royalty information
+    /// @param expirationDate End date of royalty rights
+    /// @param royaltyPercentage Percentage of royalties represented by the token (in basis points)
+    /// @param totalRoyalties Total amount of undistributed royalties
     struct RoyaltyInfo {
         uint256 expirationDate;
         uint256 royaltyPercentage;

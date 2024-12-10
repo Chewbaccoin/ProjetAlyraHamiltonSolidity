@@ -115,8 +115,6 @@ describe("PumpMusicSwap", function () {
             // due to the curve's design
             
             const expectedMinOutput = (amountIn * 88n) / 100n; // Expect at least 88% of input
-            console.log("Amount Out:", amountOut.toString());
-            console.log("Expected Min:", expectedMinOutput.toString());
             
             expect(amountOut).to.be.lt(amountIn); // Should get less out than in
             expect(amountOut).to.be.gt(expectedMinOutput); // Should be above minimum threshold
