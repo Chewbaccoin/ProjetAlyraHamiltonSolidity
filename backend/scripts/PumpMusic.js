@@ -4,7 +4,6 @@ const hre = require("hardhat");
 async function main() {
     console.log("Starting deployment...");
 
-    // Get deployment accounts
     const [deployer] = await ethers.getSigners();
     console.log("Deploying contracts with account:", deployer.address);
 
@@ -15,10 +14,18 @@ async function main() {
     await mockUSDC.waitForDeployment();
     console.log("MockUSDC deployed to:", await mockUSDC.getAddress());
 
-    // Deploy the Factory
+    // Deploy ArtistSBT
+    console.log("\nDeploying ArtistSBT...");
+    const ArtistSBT = await ethers.getContractFactory("ArtistSBT");
+    const sbt = await ArtistSBT.deploy();
+    await sbt.waitForDeployment();
+    await sbt.initialize();
+    console.log("ArtistSBT deployed to:", await sbt.getAddress());
+
+    // Deploy the Factory with SBT address
     console.log("\nDeploying PumpMusicTokenFactory...");
     const PumpMusicTokenFactory = await ethers.getContractFactory("PumpMusicTokenFactory");
-    const factory = await PumpMusicTokenFactory.deploy();
+    const factory = await PumpMusicTokenFactory.deploy(await sbt.getAddress());
     await factory.waitForDeployment();
     console.log("PumpMusicTokenFactory deployed to:", await factory.getAddress());
 
@@ -29,7 +36,11 @@ async function main() {
     await swap.waitForDeployment();
     console.log("PumpMusicSwap deployed to:", await swap.getAddress());
 
-    // Deploy an example token through the factory (optional, for testing)
+    // Mint SBT to deployer before creating token
+    console.log("\nMinting SBT to deployer...");
+    await sbt.verifyArtist(deployer.address);
+
+    // Example token creation
     console.log("\nCreating an example token...");
     const createTokenTx = await factory.createToken(
         "Example Artist Token",
@@ -41,17 +52,17 @@ async function main() {
     );
     const receipt = await createTokenTx.wait();
     
-    // Get the token address from event logs
     const tokenCreatedEvent = receipt.logs.find(
         log => log.eventName === 'TokenCreated'
     );
     const tokenAddress = tokenCreatedEvent.args.tokenAddress;
     console.log("Example token deployed to:", tokenAddress);
 
-    // Print all deployment addresses for verification
+    // Print deployment summary
     console.log("\nDeployment Summary:");
     console.log("====================");
     console.log("MockUSDC:", await mockUSDC.getAddress());
+    console.log("SBT:", await sbt.getAddress());
     console.log("Factory:", await factory.getAddress());
     console.log("Swap:", await swap.getAddress());
     console.log("Example Token:", tokenAddress);
@@ -60,19 +71,21 @@ async function main() {
     if (hre.network.name !== "hardhat" && hre.network.name !== "localhost") {
         console.log("\nVerifying contracts on Etherscan...");
         
-        // Verify MockUSDC
         await hre.run("verify:verify", {
             address: await mockUSDC.getAddress(),
             constructorArguments: []
         });
 
-        // Verify Factory
         await hre.run("verify:verify", {
-            address: await factory.getAddress(),
+            address: await sbt.getAddress(),
             constructorArguments: []
         });
 
-        // Verify Swap
+        await hre.run("verify:verify", {
+            address: await factory.getAddress(),
+            constructorArguments: [await sbt.getAddress()]
+        });
+
         await hre.run("verify:verify", {
             address: await swap.getAddress(),
             constructorArguments: [await mockUSDC.getAddress()]
@@ -80,7 +93,6 @@ async function main() {
     }
 }
 
-// Execute deployment
 main()
     .then(() => process.exit(0))
     .catch((error) => {
