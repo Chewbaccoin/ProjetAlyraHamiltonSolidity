@@ -1,6 +1,6 @@
 // src/Router.jsx
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import Home from './pages/Home'
+import HomePage from './pages/HomePage'
 import CreateToken from './pages/CreateToken'
 import TokenMarket from './pages/TokenMarket'
 import SwapTokens from './pages/SwapTokens'
@@ -8,7 +8,7 @@ import SwapTokens from './pages/SwapTokens'
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Home />,
+    element: <HomePage />,
   },
   {
     path: "/create",

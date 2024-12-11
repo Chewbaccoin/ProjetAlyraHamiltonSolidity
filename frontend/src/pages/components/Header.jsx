@@ -14,6 +14,13 @@ const Header = () => {
     setMounted(true);
   }, []);
 
+  const navigationItems = [
+    { label: 'Home', path: '/' },
+    { label: 'Create Token', path: '/create' },
+    { label: 'Swap', path: '/market' },
+    { label: 'Market', path: '/swap' }
+  ];
+
   if (!mounted) {
     return null;
   }
@@ -22,10 +29,25 @@ const Header = () => {
     <header className="header">
       <div className="header-container">
         <div className="header-content">
-          <div className="logo-container">
-            <Music className="logo-icon" />
-            <span className="logo-text">Pump Music</span>
+          <div className="flex items-center space-x-12">
+            <div className="logo-container">
+              <Music className="logo-icon" />
+              <span className="logo-text">Pump Music</span>
+            </div>
+            
+            <nav className="hidden md:flex space-x-8">
+              {navigationItems.map((item) => (
+                <a
+                  key={item.path}
+                  href={item.path}
+                  className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors duration-200"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
           </div>
+
           <div className="actions-container">
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}

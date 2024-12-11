@@ -22,25 +22,25 @@ const HomePage = () => {
       title: "Tokenize Your Music",
       description: "Convert your music royalties into tradeable tokens, giving you instant access to future earnings.",
       icon: <Music className="w-6 h-6 text-purple-400" />,
-      action: () => navigate('/create')
+      path: '/create'
     },
     {
       title: "Trade Royalty Tokens",
       description: "Buy and sell music royalty tokens in our decentralized marketplace.",
       icon: <DollarSign className="w-6 h-6 text-purple-400" />,
-      action: () => navigate('/market')
+      path: '/market'
     },
     {
       title: "Swap Tokens",
       description: "Easily swap between different artist tokens or convert to USDC.",
       icon: <RefreshCw className="w-6 h-6 text-purple-400" />,
-      action: () => navigate('/swap')
+      path: '/swap'
     },
     {
       title: "Earn Royalties",
       description: "Automatically receive your share of royalties based on token ownership.",
       icon: <RotateCw className="w-6 h-6 text-purple-400" />,
-      action: () => navigate('/dashboard')
+      path: '/dashboard'
     }
   ];
 
@@ -68,7 +68,7 @@ const HomePage = () => {
             {features.map((feature, index) => (
               <div 
                 key={index}
-                onClick={feature.action}
+                onClick={() => navigate(feature.path)}
                 className="feature-card group"
               >
                 <div className="flex items-center mb-4">
