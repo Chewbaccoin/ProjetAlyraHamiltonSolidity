@@ -163,7 +163,7 @@ const TokenMarket = () => {
             <div className="token-card-row">
               <span className="token-detail-label">Price</span>
               <span id={`token-price-${tokenAddress}`} className="token-detail-value">
-                {currentTokenPrice ? `${Number(currentTokenPrice)} USDC` : "Not available"}
+                {currentTokenPrice ? `${(Number(currentTokenPrice) / 1000000).toFixed(6)} USDC` : "Not available"}
               </span>
             </div>
             <div className="token-card-row">
