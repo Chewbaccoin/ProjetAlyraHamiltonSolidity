@@ -49,17 +49,16 @@ const TokenMarket = () => {
     enabled: !!(CONTRACTS?.TokenFactory?.address && CONTRACTS?.TokenFactory?.abi)
   });
 
-  // Lecture des tokens d'artiste via TokenFactory
-  const { data: artistTokens } = useReadContract({
+  // Nouvelle lecture pour tous les tokens
+  const { data: allTokens } = useReadContract({
     address: CONTRACTS?.TokenFactory?.address,
     abi: CONTRACTS?.TokenFactory?.abi,
-    functionName: 'getArtistTokens',
-    args: [isConnected ? address : undefined],
+    functionName: 'getAllTokens',
     enabled: !!CONTRACTS?.TokenFactory
   });
 
   // Modifiez la partie du filtrage des tokens
-  const filteredTokens = artistTokens || [];
+  const filteredTokens = allTokens || [];
   const TokenCard = ({ tokenAddress, searchTerm }) => {
     // Composant pour afficher les informations d'un token individuel
     const [isLoading, setIsLoading] = useState(true);

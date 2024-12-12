@@ -1,226 +1,219 @@
-// test/PumpMusicTokenFactory.test.js
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 
 describe("PumpMusicTokenFactory", function () {
-    // Fixture qui sera réutilisé pour chaque test
-    async function deployTokenFixture() {
-        // Get signers
-        const [owner, artist, investor1, investor2] = await ethers.getSigners();
+    async function deployFactoryFixture() {
+        const [owner, artist1, artist2, nonArtist] = await ethers.getSigners();
 
         // Deploy MockUSDC
         const MockUSDC = await ethers.getContractFactory("MockUSDC");
         const mockUSDC = await MockUSDC.deploy();
 
-        // Token parameters
-        const name = "Artist Token";
-        const symbol = "ART";
-        const royaltyPercentage = 100; // 0.001%
-        const duration = 365 * 24 * 60 * 60; // 1 year
-        const tokenPrice = ethers.parseUnits("1", 6); // 1 USDC
+        // Deploy ArtistSBT
+        const ArtistSBT = await ethers.getContractFactory("ArtistSBT");
+        const artistSBT = await ArtistSBT.deploy();
+        await artistSBT.initialize();
 
-        // Deploy RoyaltyToken
-        const RoyaltyToken = await ethers.getContractFactory("PumpMusicRoyaltyToken");
-        const royaltyToken = await RoyaltyToken.connect(artist).deploy(
-            name,
-            symbol,
-            royaltyPercentage,
-            duration,
-            tokenPrice,
-            await mockUSDC.getAddress()
-        );
+        // Deploy Factory
+        const Factory = await ethers.getContractFactory("PumpMusicTokenFactory");
+        const factory = await Factory.deploy(await artistSBT.getAddress());
 
-        // Mint USDC to investors for testing
-        await mockUSDC.mint(investor1.address, ethers.parseUnits("10000", 6));
-        await mockUSDC.mint(investor2.address, ethers.parseUnits("10000", 6));
+        // Setup: Grant artist role to artist1 and artist2
+        await artistSBT.verifyArtist(artist1.address);
+        await artistSBT.verifyArtist(artist2.address);
+
+        // Token parameters for testing
+        const tokenParams = {
+            name: "Test Music Token",
+            symbol: "TMT",
+            royaltyPercentage: 100, // 1%
+            duration: 365 * 24 * 60 * 60, // 1 year
+            tokenPrice: ethers.parseUnits("1", 6), // 1 USDC
+            usdcAddress: await mockUSDC.getAddress()
+        };
 
         return { 
-            royaltyToken, 
+            factory, 
+            artistSBT, 
             mockUSDC, 
             owner, 
-            artist, 
-            investor1, 
-            investor2,
-            royaltyPercentage,
-            duration,
-            tokenPrice
+            artist1, 
+            artist2, 
+            nonArtist,
+            tokenParams 
         };
     }
 
     describe("Deployment", function () {
-        it("Should set the right name and symbol", async function () {
-            const { royaltyToken } = await loadFixture(deployTokenFixture);
-            expect(await royaltyToken.name()).to.equal("Artist Token");
-            expect(await royaltyToken.symbol()).to.equal("ART");
-        });
-
         it("Should set the right owner", async function () {
-            const { royaltyToken, artist } = await loadFixture(deployTokenFixture);
-            expect(await royaltyToken.owner()).to.equal(artist.address);
+            const { factory, owner } = await loadFixture(deployFactoryFixture);
+            expect(await factory.owner()).to.equal(owner.address);
         });
 
-        it("Should mint initial supply to artist", async function () {
-            const { royaltyToken, artist } = await loadFixture(deployTokenFixture);
-            const initialSupply = ethers.parseEther("1000000000");
-            expect(await royaltyToken.balanceOf(artist.address)).to.equal(initialSupply);
-        });
-
-        it("Should set correct royalty parameters", async function () {
-            const { royaltyToken, royaltyPercentage } = await loadFixture(deployTokenFixture);
-            const royaltyInfo = await royaltyToken.royaltyInfo();
-            expect(royaltyInfo.royaltyPercentage).to.equal(royaltyPercentage);
+        it("Should set the correct ArtistSBT address", async function () {
+            const { factory, artistSBT } = await loadFixture(deployFactoryFixture);
+            expect(await factory.artistSBT()).to.equal(await artistSBT.getAddress());
         });
     });
 
-    describe("Token Sale", function () {
-        it("Should allow listing tokens for sale", async function () {
-            const { royaltyToken, artist, tokenPrice } = await loadFixture(deployTokenFixture);
-            await royaltyToken.connect(artist).listTokensForSale(tokenPrice);
-            expect(await royaltyToken.isListedForSale()).to.be.true;
-            expect(await royaltyToken.tokenPrice()).to.equal(tokenPrice);
+    describe("Token Creation", function () {
+        it("Should allow verified artists to create tokens", async function () {
+            const { factory, artist1, tokenParams } = await loadFixture(deployFactoryFixture);
+            
+            await expect(factory.connect(artist1).createToken(
+                tokenParams.name,
+                tokenParams.symbol,
+                tokenParams.royaltyPercentage,
+                tokenParams.duration,
+                tokenParams.tokenPrice,
+                tokenParams.usdcAddress
+            )).to.emit(factory, "TokenCreated")
+              .withArgs(artist1.address, anyValue);
         });
 
-        it("Should fail listing if not owner", async function () {
-            const { royaltyToken, investor1, tokenPrice } = await loadFixture(deployTokenFixture);
-            await expect(
-                royaltyToken.connect(investor1).listTokensForSale(tokenPrice)
-            ).to.be.revertedWithCustomError(royaltyToken, "OwnableUnauthorizedAccount");
+        it("Should prevent non-artists from creating tokens", async function () {
+            const { factory, nonArtist, tokenParams } = await loadFixture(deployFactoryFixture);
+            
+            await expect(factory.connect(nonArtist).createToken(
+                tokenParams.name,
+                tokenParams.symbol,
+                tokenParams.royaltyPercentage,
+                tokenParams.duration,
+                tokenParams.tokenPrice,
+                tokenParams.usdcAddress
+            )).to.be.revertedWith("Only verified artists can create tokens");
         });
 
-        it("Should allow token purchase", async function () {
-            const { royaltyToken, mockUSDC, artist, investor1, tokenPrice } = await loadFixture(deployTokenFixture);
-        
-            // List tokens for sale
-            await royaltyToken.connect(artist).listTokensForSale(tokenPrice);
+        it("Should validate token parameters", async function () {
+            const { factory, artist1, tokenParams } = await loadFixture(deployFactoryFixture);
             
-            // Set purchase amount (in royalty token decimals - 18)
-            const purchaseAmount = ethers.parseEther("1000");  // 1000 tokens
+            // Test empty name
+            await expect(factory.connect(artist1).createToken(
+                "",
+                tokenParams.symbol,
+                tokenParams.royaltyPercentage,
+                tokenParams.duration,
+                tokenParams.tokenPrice,
+                tokenParams.usdcAddress
+            )).to.be.revertedWith("Name cannot be empty");
+
+            // Test empty symbol
+            await expect(factory.connect(artist1).createToken(
+                tokenParams.name,
+                "",
+                tokenParams.royaltyPercentage,
+                tokenParams.duration,
+                tokenParams.tokenPrice,
+                tokenParams.usdcAddress
+            )).to.be.revertedWith("Symbol cannot be empty");
+
+            // Test zero duration
+            await expect(factory.connect(artist1).createToken(
+                tokenParams.name,
+                tokenParams.symbol,
+                tokenParams.royaltyPercentage,
+                0,
+                tokenParams.tokenPrice,
+                tokenParams.usdcAddress
+            )).to.be.revertedWith("Duration must be greater than 0");
+
+            // Test zero token price
+            await expect(factory.connect(artist1).createToken(
+                tokenParams.name,
+                tokenParams.symbol,
+                tokenParams.royaltyPercentage,
+                tokenParams.duration,
+                0,
+                tokenParams.usdcAddress
+            )).to.be.revertedWith("Token price must be greater than 0");
+
+            // Test zero address for USDC
+            await expect(factory.connect(artist1).createToken(
+                tokenParams.name,
+                tokenParams.symbol,
+                tokenParams.royaltyPercentage,
+                tokenParams.duration,
+                tokenParams.tokenPrice,
+                ethers.ZeroAddress
+            )).to.be.revertedWith("Invalid USDC address");
+        });
+
+        it("Should transfer token ownership to the artist", async function () {
+            const { factory, artist1, tokenParams } = await loadFixture(deployFactoryFixture);
             
-            // Calculate cost in USDC
-            // In the contract: cost = amount * tokenPrice
-            // purchaseAmount is 1000e18 (18 decimals)
-            // tokenPrice is 1e6 (6 decimals)
-            const cost = purchaseAmount * tokenPrice;
-            
-            // Mint enough USDC to the investor
-            await mockUSDC.mint(investor1.address, cost);
-            
-            // Approve exact amount needed
-            await mockUSDC.connect(investor1).approve(
-                await royaltyToken.getAddress(),
-                cost
+            const tx = await factory.connect(artist1).createToken(
+                tokenParams.name,
+                tokenParams.symbol,
+                tokenParams.royaltyPercentage,
+                tokenParams.duration,
+                tokenParams.tokenPrice,
+                tokenParams.usdcAddress
             );
             
-            // Purchase tokens
-            await royaltyToken.connect(investor1).purchaseTokens(purchaseAmount);
+            const receipt = await tx.wait();
+            const event = receipt.logs.find(log => log.fragment?.name === 'TokenCreated');
+            const tokenAddress = event.args[1];
             
-            // Verify balances
-            expect(await royaltyToken.balanceOf(investor1.address)).to.equal(purchaseAmount);
-            expect(await mockUSDC.balanceOf(artist.address)).to.equal(cost);
+            const RoyaltyToken = await ethers.getContractFactory("PumpMusicRoyaltyToken");
+            const token = RoyaltyToken.attach(tokenAddress);
+            
+            expect(await token.owner()).to.equal(artist1.address);
         });
     });
 
-    describe("Royalty Distribution", function () {
-        it("Should distribute royalties correctly", async function () {
-            const { royaltyToken, artist, investor1 } = await loadFixture(deployTokenFixture);
-    
-            // Transfer tokens to investor
-            const investorTokens = ethers.parseEther("1000");
-            await royaltyToken.connect(artist).transfer(investor1.address, investorTokens);
+    describe("Token Tracking", function () {
+        it("Should correctly track tokens per artist", async function () {
+            const { factory, artist1, tokenParams } = await loadFixture(deployFactoryFixture);
             
-            // Envoyer de l'ETH au contrat pour les frais de plateforme
-            await artist.sendTransaction({
-                to: await royaltyToken.getAddress(),
-                value: ethers.parseEther("10")
-            });
-            
-            // Distribute royalties with correct format
-            const royaltyAmount = ethers.parseEther("1");
-            await royaltyToken.connect(artist).distributeRoyalties(ethers.parseEther("1"));
-            
-            // Verify royalty accounting
-            const royaltyInfo = await royaltyToken.royaltyInfo();
-            const platformFee = (royaltyAmount * 300n) / 10000n;
-            const netRoyalties = royaltyAmount - platformFee;
-            
-            expect(royaltyInfo.totalRoyalties).to.equal(netRoyalties);
+            // Create two tokens
+            await factory.connect(artist1).createToken(
+                tokenParams.name,
+                tokenParams.symbol,
+                tokenParams.royaltyPercentage,
+                tokenParams.duration,
+                tokenParams.tokenPrice,
+                tokenParams.usdcAddress
+            );
+
+            await factory.connect(artist1).createToken(
+                tokenParams.name + "2",
+                tokenParams.symbol + "2",
+                tokenParams.royaltyPercentage,
+                tokenParams.duration,
+                tokenParams.tokenPrice,
+                tokenParams.usdcAddress
+            );
+
+            const artistTokens = await factory.getArtistTokens(artist1.address);
+            expect(artistTokens.length).to.equal(2);
         });
 
-        it("Should allow claiming royalties", async function () {
-            const { royaltyToken, artist, investor1 } = await loadFixture(deployTokenFixture);
-    
-            // Transfer a larger amount of tokens to investor (50% of supply)
-            const investorTokens = ethers.parseEther("500000000");
-            await royaltyToken.connect(artist).transfer(investor1.address, investorTokens);
+        it("Should track all created tokens globally", async function () {
+            const { factory, artist1, artist2, tokenParams } = await loadFixture(deployFactoryFixture);
             
-            // Send more ETH to contract for royalties
-            await artist.sendTransaction({
-                to: await royaltyToken.getAddress(),
-                value: ethers.parseEther("100")  // Increased to 100 ETH
-            });
-            
-            // Distribute larger amount of royalties
-            const royaltyAmount = ethers.parseEther("10");  // Increased to 10 ETH
-            await royaltyToken.connect(artist).distributeRoyalties(royaltyAmount);
-            
-            // Record balance before claim
-            const balanceBefore = await ethers.provider.getBalance(investor1.address);
-            
-            // Claim royalties
-            await royaltyToken.connect(investor1).claimRoyalties();
-            
-            const balanceAfter = await ethers.provider.getBalance(investor1.address);
-            
-            // Verify balance increased
-            expect(balanceAfter).to.be.gt(balanceBefore);
-        });
+            // Create tokens from different artists
+            await factory.connect(artist1).createToken(
+                tokenParams.name,
+                tokenParams.symbol,
+                tokenParams.royaltyPercentage,
+                tokenParams.duration,
+                tokenParams.tokenPrice,
+                tokenParams.usdcAddress
+            );
 
-        it("Should fail distribution after expiration", async function () {
-            const { royaltyToken, artist } = await loadFixture(deployTokenFixture);
-    
-            // Increase time beyond duration
-            await ethers.provider.send("evm_increaseTime", [366 * 24 * 60 * 60]); // 366 days
-            await ethers.provider.send("evm_mine");
-            
-            // Try to distribute royalties with correct format
-            await expect(
-                royaltyToken.connect(artist).distributeRoyalties(ethers.parseEther("1"))
-            ).to.be.revertedWith("Royalty period expired");
-        });
-    });
+            await factory.connect(artist2).createToken(
+                tokenParams.name + "2",
+                tokenParams.symbol + "2",
+                tokenParams.royaltyPercentage,
+                tokenParams.duration,
+                tokenParams.tokenPrice,
+                tokenParams.usdcAddress
+            );
 
-    describe("Edge Cases and Security", function () {
-        it("Should prevent claiming with no tokens", async function () {
-            const { royaltyToken, investor1 } = await loadFixture(deployTokenFixture);
-            await expect(
-                royaltyToken.connect(investor1).claimRoyalties()
-            ).to.be.revertedWith("No tokens owned");
-        });
-
-        it("Should prevent claiming when no royalties available", async function () {
-            const { royaltyToken, artist, investor1 } = await loadFixture(deployTokenFixture);
-            await royaltyToken.connect(artist).transfer(investor1.address, ethers.parseEther("1000"));
-            
-            await expect(
-                royaltyToken.connect(investor1).claimRoyalties()
-            ).to.be.revertedWith("No royalties to claim");
-        });
-
-        it("Should handle zero token purchases", async function () {
-            const { royaltyToken, artist } = await loadFixture(deployTokenFixture);
-            await royaltyToken.connect(artist).listTokensForSale(ethers.parseUnits("1", 6));
-            
-            await expect(
-                royaltyToken.connect(artist).purchaseTokens(0)
-            ).to.be.revertedWith("Amount must be greater than 0");
-        });
-
-        it("Should prevent purchasing when not listed", async function () {
-            const { royaltyToken, investor1 } = await loadFixture(deployTokenFixture);
-            await expect(
-                royaltyToken.connect(investor1).purchaseTokens(ethers.parseEther("1"))
-            ).to.be.revertedWith("Tokens not listed for sale");
+            const allTokens = await factory.getAllTokens();
+            expect(allTokens.length).to.equal(2);
         });
     });
 });

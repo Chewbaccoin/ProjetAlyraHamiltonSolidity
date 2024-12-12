@@ -2,7 +2,7 @@
 export const CONTRACTS = {
     ArtistSBT: {
       //address: "ARTIST_SBT_ADDRESS",
-      address: "0xd9DEDCC7D2670CDC2C680a1B510ba65793020038",
+      address: "0x58c4Ca09fEa2864A13224C7D7d8827fAcC6bc186",
       abi: [
         {
           "inputs": [
@@ -647,7 +647,7 @@ export const CONTRACTS = {
     },
     TokenFactory: {
       //address: "TOKEN_FACTORY_ADDRESS",
-      address: "0x590916BDD647C2686E515BAFf76608c981eB329e",
+      address: "0x9Ee9baC120F20f4bD41ad7088FEFF5092E75e593",
       abi: [
         {
           "inputs": [
@@ -719,6 +719,25 @@ export const CONTRACTS = {
           ],
           "name": "TokenCreated",
           "type": "event"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "name": "allTokens",
+          "outputs": [
+            {
+              "internalType": "contract PumpMusicRoyaltyToken",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
         },
         {
           "inputs": [],
@@ -799,6 +818,19 @@ export const CONTRACTS = {
             }
           ],
           "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "getAllTokens",
+          "outputs": [
+            {
+              "internalType": "contract PumpMusicRoyaltyToken[]",
+              "name": "",
+              "type": "address[]"
+            }
+          ],
+          "stateMutability": "view",
           "type": "function"
         },
         {
@@ -1518,7 +1550,7 @@ export const CONTRACTS = {
     },
     USDC: {
       //address: "USDC_ADDRESS",
-      address: "0x9aEDDEdb88b0711D187ED39D7103dB134029334B",
+      address: "0x30E2eCf03F0439eDCA9630FC233e2a2050B94Dcd",
       abi: [
         {
           "inputs": [],

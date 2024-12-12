@@ -15,6 +15,9 @@ contract PumpMusicTokenFactory is Ownable {
     // Mapping to track tokens created by artist
     mapping(address => PumpMusicRoyaltyToken[]) public artistTokens;
     
+    /// @notice Stocke tous les tokens créés
+    PumpMusicRoyaltyToken[] public allTokens;
+
     event TokenCreated(address indexed artist, address tokenAddress);
 
     constructor(address _artistSBT) Ownable(msg.sender) {
@@ -59,8 +62,10 @@ contract PumpMusicTokenFactory is Ownable {
             usdcAddress
         );
         
-        // Enregistrement et transfert de propriété
+        // Ajouter le token aux deux mappings
         artistTokens[msg.sender].push(token);
+        allTokens.push(token);
+        
         token.transferOwnership(msg.sender);
         
         emit TokenCreated(msg.sender, address(token));
@@ -72,5 +77,11 @@ contract PumpMusicTokenFactory is Ownable {
     /// @return PumpMusicRoyaltyToken[] List of artist's tokens
     function getArtistTokens(address artist) external view returns (PumpMusicRoyaltyToken[] memory) {
         return artistTokens[artist];
+    }
+
+    /// @notice Récupère tous les tokens créés
+    /// @return PumpMusicRoyaltyToken[] Liste de tous les tokens
+    function getAllTokens() external view returns (PumpMusicRoyaltyToken[] memory) {
+        return allTokens;
     }
 }
