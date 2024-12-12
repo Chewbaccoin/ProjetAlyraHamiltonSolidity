@@ -102,3 +102,134 @@ body {
 .create-token-label {
   @apply text-gray-700 dark:text-gray-200;
 }
+
+/* Styles du marché de tokens */
+.token-market-container {
+  @apply min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col;
+}
+
+.token-market-header {
+  @apply flex items-center justify-between mb-8;
+}
+
+.token-market-search {
+  @apply flex flex-col md:flex-row gap-4 mb-8;
+}
+
+.token-market-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+}
+
+.token-card {
+  @apply bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700;
+}
+
+.token-card-content {
+  @apply space-y-2;
+}
+
+.token-card-header {
+  @apply flex items-center justify-between;
+}
+
+.token-name {
+  @apply text-lg font-semibold;
+}
+
+.token-symbol {
+  @apply text-sm text-gray-500;
+}
+
+.token-card-details {
+  @apply pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2;
+}
+
+.token-card-row {
+  @apply flex justify-between text-sm;
+}
+
+.token-detail-label {
+  @apply text-gray-500 dark:text-gray-400;
+}
+
+.token-detail-value {
+  @apply font-medium text-gray-900 dark:text-white;
+}
+
+.token-buy-button {
+  @apply w-full mt-4;
+}
+
+/* Token Market Search Styles */
+.token-market-search {
+  @apply flex-1 relative;
+}
+
+.token-market-search-icon {
+  @apply absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500;
+}
+
+.token-market-search-input {
+  @apply pl-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white;
+}
+
+/* Token Market Filter Buttons */
+.token-market-filters {
+  @apply flex gap-2;
+}
+
+/* Empty State Styles */
+.token-market-empty {
+  @apply text-center py-12;
+}
+
+.token-market-empty-icon {
+  @apply mx-auto h-12 w-12 text-gray-400;
+}
+
+.token-market-empty-title {
+  @apply mt-4 text-lg font-medium text-gray-900 dark:text-white;
+}
+
+.token-market-empty-description {
+  @apply mt-2 text-gray-500 dark:text-gray-400;
+}
+
+/* Styles communs pour les conteneurs de pages */
+.page-container {
+  @apply min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900;
+}
+
+.page-content {
+  @apply flex-grow py-12 px-4;
+}
+
+.page-header {
+  @apply flex items-center gap-2;
+}
+
+.page-icon {
+  @apply p-3 rounded-full bg-purple-500/10;
+}
+
+/* Styles pour les messages d'alerte */
+.alert-container {
+  @apply flex items-center justify-center flex-grow py-12;
+}
+
+.alert-content {
+  @apply flex items-center gap-2;
+}
+
+/* Styles pour les formulaires */
+.form-container {
+  @apply bg-white dark:bg-gray-900/50 p-6 rounded-xl border border-gray-200 dark:border-gray-800;
+}
+
+.form-input {
+  @apply bg-gray-50 dark:bg-black/50 text-gray-900 dark:text-gray-100;
+}
+
+.form-label {
+  @apply text-gray-700 dark:text-gray-200;
+}

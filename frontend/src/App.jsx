@@ -7,6 +7,9 @@ import { config, chains } from './wagmi'
 import { ThemeProvider } from 'next-themes'
 import HomePage from './pages/HomePage'
 import CreateToken from './pages/CreateToken'
+import TokenMarket from './pages/TokenMarket'
+import SwapTokens from './pages/SwapTokens'
+import Dashboard from './pages/Dashboard'
 import '@rainbow-me/rainbowkit/styles.css'
 import './App.css'
 
@@ -22,6 +25,9 @@ function App() {
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/create" element={<CreateToken />} />
+                <Route path="/market" element={<TokenMarket />} />
+                <Route path="/swap" element={<SwapTokens />} />
+                <Route path="/dashboard" element={<Dashboard />} />
               </Routes>
             </BrowserRouter>
           </RainbowKitProvider>

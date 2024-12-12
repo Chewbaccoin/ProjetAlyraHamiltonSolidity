@@ -4,7 +4,7 @@ import HomePage from './pages/HomePage'
 import CreateToken from './pages/CreateToken'
 import TokenMarket from './pages/TokenMarket'
 import SwapTokens from './pages/SwapTokens'
-
+import Dashboard from './pages/Dashboard'
 const router = createBrowserRouter([
   {
     path: "/",
@@ -15,12 +15,16 @@ const router = createBrowserRouter([
     element: <CreateToken />,
   },
   {
+    path: "/swap",
+    element: <SwapTokens />,
+  },
+  {
     path: "/market",
     element: <TokenMarket />,
   },
   {
-    path: "/swap",
-    element: <SwapTokens />,
+    path: "/dashboard",
+    element: <Dashboard />,
   }
 ])
 

@@ -77,7 +77,7 @@ const CreateToken = () => {
 
   if (!isConnected) {
     return (
-      <div className="create-token-container">
+      <div className="create-token-container min-h-screen bg-gray-50 dark:bg-gray-900">
         <Header />
         <div className="flex items-center justify-center flex-grow py-12">
           <Alert className="max-w-md">
@@ -96,7 +96,7 @@ const CreateToken = () => {
 
   if (isConnected && isArtist === false) {
     return (
-      <div className="create-token-container">
+      <div className="create-token-container min-h-screen bg-gray-50 dark:bg-gray-900">
         <Header />
         <div className="flex-grow flex items-center justify-center py-12">
           <Alert className="max-w-md" variant="destructive">
@@ -114,11 +114,11 @@ const CreateToken = () => {
   }
 
   return (
-    <div className="create-token-container">
+    <div className="create-token-container min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
       <div className="flex-grow py-12 px-4">
         <div className="max-w-2xl mx-auto">
-          <div className="create-token-header">
+          <div className="create-token-header flex items-center gap-2">
             <div className="create-token-icon">
               <Music className="w-8 h-8 text-purple-500" />
             </div>

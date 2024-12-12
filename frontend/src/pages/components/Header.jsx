@@ -17,8 +17,9 @@ const Header = () => {
   const navigationItems = [
     { label: 'Home', path: '/' },
     { label: 'Create Token', path: '/create' },
-    { label: 'Swap', path: '/market' },
-    { label: 'Market', path: '/swap' }
+    { label: 'Swap', path: '/swap' },
+    { label: 'Market', path: '/market' },
+    { label: 'Dashboard', path: '/dashboard' }
   ];
 
   if (!mounted) {
