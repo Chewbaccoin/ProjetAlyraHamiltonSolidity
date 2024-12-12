@@ -2,7 +2,7 @@
 export const CONTRACTS = {
     ArtistSBT: {
       //address: "ARTIST_SBT_ADDRESS",
-      address: "0x58c4Ca09fEa2864A13224C7D7d8827fAcC6bc186",
+      address: "0xF479a30d77c5E1A459D7a1D1BD9DB8dFD21982F6",
       abi: [
         {
           "inputs": [
@@ -647,7 +647,7 @@ export const CONTRACTS = {
     },
     TokenFactory: {
       //address: "TOKEN_FACTORY_ADDRESS",
-      address: "0x9Ee9baC120F20f4bD41ad7088FEFF5092E75e593",
+      address: "0x3B459f6632EDb2cf3f32206c150fB67E270bBEA8",
       abi: [
         {
           "inputs": [
@@ -1550,7 +1550,7 @@ export const CONTRACTS = {
     },
     USDC: {
       //address: "USDC_ADDRESS",
-      address: "0x30E2eCf03F0439eDCA9630FC233e2a2050B94Dcd",
+      address: "0x76Bc32CCc4b9f06967cF9D298A748F3abB5A10Fc",
       abi: [
         {
           "inputs": [],

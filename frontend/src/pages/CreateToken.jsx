@@ -207,11 +207,18 @@ const CreateToken = () => {
                       <div className="flex gap-2 items-center">
                         <Input
                           type="number"
-                          step="0.000001"
+                          step="0.0001"
                           min="0"
                           placeholder="1.00"
                           value={formData.tokenPrice}
-                          onChange={(e) => setFormData({...formData, tokenPrice: e.target.value})}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            // Vérifier si la valeur a plus de 4 décimales
+                            if (value.includes('.') && value.split('.')[1].length > 4) {
+                              return;
+                            }
+                            setFormData({...formData, tokenPrice: value});
+                          }}
                           className="create-token-input"
                           required
                         />

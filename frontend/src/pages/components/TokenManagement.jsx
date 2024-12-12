@@ -9,8 +9,6 @@ import { Loader2 } from 'lucide-react';
 import { CONTRACTS } from '../../contracts';
 
 const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol, currentPrice }) => {
-  const isAlreadyListed = currentPrice && Number(currentPrice) > 0;
-  
   const [newPrice, setNewPrice] = useState('');
   const [royaltyAmount, setRoyaltyAmount] = useState('');
   const [isListed, setIsListed] = useState(false);
@@ -18,10 +16,6 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
   const { writeContract: listForSale, data: listData } = useWriteContract();
 
   const { writeContract: distributeRoyalties, data: distributeData } = useWriteContract();
-
-  const { isLoading: isListing } = useWaitForTransactionReceipt({
-    hash: listData?.hash,
-  });
 
   const { isLoading: isDistributing } = useWaitForTransactionReceipt({
     hash: distributeData?.hash,
@@ -64,8 +58,9 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
   };
 
   useEffect(() => {
-    setIsListed(isListedData || isAlreadyListed);
-  }, [isListedData, isAlreadyListed]);
+    console.log('isListedData:', isListedData);
+    setIsListed(Boolean(isListedData));
+  }, [isListedData]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -91,12 +86,8 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
                 onChange={(e) => setNewPrice(e.target.value)}
                 className="flex-1"
               />
-              <Button onClick={handleUpdatePrice} disabled={isListing || !newPrice}>
-                {isListing ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  'Update'
-                )}
+              <Button onClick={handleUpdatePrice} disabled={!newPrice}>
+                Update
               </Button>
             </div>
           </div>
@@ -134,13 +125,7 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
                 disabled={isListed}
                 className="w-full"
               >
-                {isListing ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : isListed ? (
-                  'Already Listed'
-                ) : (
-                  'List for Sale'
-                )}
+                {isListed ? 'Already listed' : 'List for sale'}
               </Button>
             </div>
           </div>
