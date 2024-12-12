@@ -127,10 +127,10 @@ const TokenMarket = () => {
       if (!royaltyInfo) return "Not available";
       const timestamp = Number(royaltyInfo[0]);
       if (isNaN(timestamp)) return "Not available";
-      return new Date(timestamp * 1000).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+      return new Date(timestamp * 1000).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
       });
     };
 
@@ -211,11 +211,9 @@ const TokenMarket = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       <Header />
-      
-      <main className="flex-grow pt-16">
-        {/* En-tête de la page */}
+      <main className="page-main">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          {/* Header */}
+          {/* En-tête de la page */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center">
               <Music className="w-8 h-8 text-purple-500" />

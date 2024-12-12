@@ -7,6 +7,7 @@ body {
 }
 
 #root {
+  @apply min-h-screen flex flex-col;
   width: 100%;
   max-width: none;
   padding: 0;
@@ -27,6 +28,9 @@ body {
   animation: fadeIn 0.8s ease-out forwards;
 }
 
+.page-main {
+  @apply max-w-7xl mx-auto px-4 py-8 pt-24; /* pt-24 crée un espacement uniforme sous le header fixe */
+}
 /* Feature Card Styles */
 .feature-card {
   @apply p-8 rounded-2xl bg-white dark:bg-gray-800 
@@ -76,7 +80,7 @@ body {
 
 /* Create Token Page Styles */
 .create-token-container {
-  @apply min-h-screen flex flex-col pt-16 bg-gray-50 dark:bg-gray-950;
+  @apply min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col;
 }
 
 .create-token-header {
@@ -232,4 +236,241 @@ body {
 
 .form-label {
   @apply text-gray-700 dark:text-gray-200;
+}
+
+/* Layout utilities */
+.page-wrapper {
+  @apply min-h-screen flex flex-col;
+}
+
+.page-main {
+  @apply flex-1 flex flex-col;
+}
+
+/* Section spacing */
+.section-spacing {
+  @apply space-y-8;
+}
+
+/* Content containers */
+.content-container {
+  @apply max-w-2xl mx-auto;
+}
+
+.content-container-large {
+  @apply max-w-7xl mx-auto;
+}
+
+/* Grid layouts */
+.grid-cards {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+}
+
+/* Flex layouts */
+.flex-between {
+  @apply flex items-center justify-between;
+}
+
+.flex-center {
+  @apply flex items-center justify-center;
+}
+
+/* Dashboard Styles */
+.artist-dashboard-container,
+.investor-dashboard-container {
+  @apply space-y-8;
+}
+
+.artist-header,
+.investor-header {
+  @apply flex items-center gap-4;
+}
+
+.artist-icon,
+.investor-icon {
+  @apply p-3 rounded-full;
+}
+
+.artist-icon {
+  @apply bg-purple-500/10;
+}
+
+.investor-icon {
+  @apply bg-green-500/10;
+}
+
+.artist-title,
+.investor-title {
+  @apply text-xl font-bold text-gray-900 dark:text-white;
+}
+
+.artist-subtitle,
+.investor-subtitle {
+  @apply text-gray-600 dark:text-gray-400;
+}
+
+.stats-grid {
+  @apply grid grid-cols-3 gap-6;
+}
+
+.stat-card {
+  @apply flex items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-xl 
+         border border-gray-200 dark:border-gray-700 shadow-sm;
+}
+
+.tokens-section {
+  @apply space-y-4;
+}
+
+.token-card {
+  @apply bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md 
+         transition-all border border-gray-200 dark:border-gray-700;
+}
+
+.empty-state {
+  @apply text-center py-12 bg-white dark:bg-gray-800 rounded-xl 
+         border border-gray-200 dark:border-gray-700;
+}
+
+.empty-state-icon {
+  @apply mx-auto h-12 w-12 text-gray-400;
+}
+
+.empty-state-title {
+  @apply mt-4 text-lg font-medium text-gray-900 dark:text-white;
+}
+
+.empty-state-description {
+  @apply mt-2 text-gray-500 dark:text-gray-400;
+}
+
+/* Ajouter dans index.css */
+.create-token-page {
+  @apply flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900;
+}
+
+.create-token-main {
+  @apply flex-1 py-12 px-4 pt-20;
+}
+
+.create-token-wrapper {
+  @apply max-w-2xl mx-auto;
+}
+
+.create-token-title-section {
+  @apply flex items-center gap-2;
+}
+
+.create-token-icon-wrapper {
+  @apply w-8 h-8 text-purple-500;
+}
+
+.create-token-title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white;
+}
+
+.create-token-subtitle {
+  @apply text-gray-600 dark:text-gray-400;
+}
+
+.create-token-form-section {
+  @apply space-y-4;
+}
+
+.create-token-input-group {
+  @apply flex gap-2 items-center;
+}
+
+.create-token-unit {
+  @apply text-gray-400;
+}
+
+/* Pour le TokenMarket */
+.token-market-container {
+  @apply flex flex-col min-h-screen;
+}
+
+/* Pour le Dashboard */
+.dashboard-container {
+  @apply flex flex-col min-h-screen;
+}
+
+/* Ajoutez ces nouvelles classes */
+.dashboard-layout {
+  @apply flex-1 flex flex-col;
+}
+
+.dashboard-content {
+  @apply flex-1 max-w-7xl mx-auto px-4 py-6 w-full;
+}
+
+/* Assurez-vous que le conteneur principal remplit toute la hauteur */
+.min-h-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Layouts de base */
+.page-layout {
+  @apply min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col;
+}
+
+.page-main {
+  @apply flex-1 max-w-7xl mx-auto w-full px-4 py-8 pt-24;
+}
+
+/* Conteneurs de section */
+.section-container {
+  @apply space-y-8;
+}
+
+/* En-têtes de section */
+.section-header {
+  @apply flex items-center gap-4 mb-8;
+}
+
+.section-icon {
+  @apply p-3 rounded-full;
+}
+
+.section-title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white;
+}
+
+.section-subtitle {
+  @apply text-gray-600 dark:text-gray-400;
+}
+
+/* Grilles et cartes */
+.cards-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+}
+
+.base-card {
+  @apply bg-white dark:bg-gray-800 rounded-xl p-6 
+         border border-gray-200 dark:border-gray-700
+         shadow-sm hover:shadow-md transition-all;
+}
+
+/* États vides */
+.empty-state {
+  @apply flex flex-col items-center justify-center py-12 text-center;
+}
+
+.empty-state-icon {
+  @apply w-12 h-12 text-gray-400 mb-4;
+}
+
+.empty-state-title {
+  @apply text-lg font-medium text-gray-900 dark:text-white mb-2;
+}
+
+.empty-state-description {
+  @apply text-gray-500 dark:text-gray-400;
+}
+
+/* Style spécifique pour le footer */
+footer {
+  @apply mt-auto; /* Ceci poussera le footer vers le bas */
 }
