@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useAccount, useReadContract } from 'wagmi';
-import { Music, Search, Filter, Loader2 } from 'lucide-react';
+import { useAccount, useReadContract, useWriteContract, useConfig, useSimulateContract } from 'wagmi';
+import { waitForTransactionReceipt } from '@wagmi/core';
+import { Music, Search, Loader2 } from 'lucide-react';
+import { readContract } from '@wagmi/core';
+import { parseUnits } from 'viem';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './components/ui/Dialog';
 import { Input } from './components/ui/Input';
 import { Button }  from './components/ui/Button';
 import { CONTRACTS } from '../contracts';
@@ -12,6 +16,12 @@ const TokenMarket = () => {
   const { isConnected, address } = useAccount();
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
+  const [selectedToken, setSelectedToken] = useState(null);
+  const [showBuyDialog, setShowBuyDialog] = useState(false);
+  const [purchaseAmount, setPurchaseAmount] = useState('');
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const config = useConfig(); 
+  const { writeContract } = useWriteContract();
 
   // Vérifie la disponibilité de l'ABI au chargement
   useEffect(() => {
@@ -19,6 +29,21 @@ const TokenMarket = () => {
       console.error('ABI non disponible pour PumpMusicRoyaltyToken');
     }
   }, []);
+
+  const { data: approveSimulation } = useSimulateContract({
+    address: CONTRACTS.USDC.address,
+    abi: CONTRACTS.USDC.abi,
+    functionName: 'approve',
+    args: [selectedToken?.address ?? '0x', 0n], // Default values until actual execution
+  });
+  
+  const { data: purchaseSimulation } = useSimulateContract({
+    address: selectedToken?.address ?? '0x',
+    abi: CONTRACTS.RoyaltyToken.abi,
+    functionName: 'purchaseTokens',
+    args: [0n], // Default value until actual execution
+  });
+  
 
   // Lecture des informations principales du contrat
   const { data: royaltyInfo, isLoading: isRoyaltyLoading } = useReadContract({
@@ -185,11 +210,24 @@ const TokenMarket = () => {
             </div>
           </div>
           <Button 
-            className="token-buy-button"
-            disabled={!isTokenListed}
-          >
-            {isTokenListed ? "Buy Tokens" : "Not available"}
-          </Button>
+  className="token-buy-button"
+  disabled={!isTokenListed || !isConnected || !currentTokenPrice}
+  onClick={() => {
+    if (!currentTokenPrice) {
+      console.error("Prix du token non disponible");
+      return;
+    }
+    
+    setSelectedToken({
+      address: tokenAddress,
+      name: tokenName,
+      price: currentTokenPrice.toString()
+    });
+    setShowBuyDialog(true);
+  }}
+>
+  {isTokenListed ? "Buy Tokens" : "Not available"}
+</Button>
         </div>
       </div>
     );
@@ -207,6 +245,60 @@ const TokenMarket = () => {
       </div>
     );
   }
+  
+  // Déplacez handleBuyTokens en dehors de TokenCard
+  const handleBuyTokens = async () => {
+    try {
+      setIsPurchasing(true);
+      
+      // Conversion du montant en BigInt avec 18 décimales
+      const tokenAmount = parseUnits(purchaseAmount, 18);
+      
+      // Prix en USDC (6 décimales)
+      const pricePerToken = BigInt(selectedToken.price);
+      
+      // Calcul ajusté du coût total
+      const costInUSDC = (tokenAmount * pricePerToken) / BigInt(10n ** 18n);
+      
+      // Vérification de l'allowance USDC
+      const currentAllowance = await readContract(config, {
+        address: CONTRACTS.USDC.address,
+        abi: CONTRACTS.USDC.abi,
+        functionName: 'allowance',
+        args: [address, selectedToken.address],
+      });
+
+      // Approbation si nécessaire
+      if (currentAllowance < costInUSDC) {
+        const approveHash = await writeContract({
+          address: CONTRACTS.USDC.address,
+          abi: CONTRACTS.USDC.abi,
+          functionName: 'approve',
+          args: [selectedToken.address, costInUSDC],
+        });
+        await waitForTransactionReceipt(config, { hash: approveHash });
+      }
+
+      // Achat des tokens avec le montant exact
+      const purchaseHash = await writeContract({
+        address: selectedToken.address,
+        abi: CONTRACTS.RoyaltyToken.abi,
+        functionName: 'purchaseTokens',
+        args: [tokenAmount],
+      });
+
+      await waitForTransactionReceipt(config, { hash: purchaseHash });
+      
+      setShowBuyDialog(false);
+      setPurchaseAmount('');
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'achat:', error);
+      alert(`Échec de l'achat: ${error.message}`);
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
@@ -285,6 +377,56 @@ const TokenMarket = () => {
       </main>
 
       <Footer />
+
+      <Dialog open={showBuyDialog} onOpenChange={setShowBuyDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Buy {selectedToken?.name} Tokens</DialogTitle>
+            <DialogDescription>
+              Enter the amount of tokens you want to purchase
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Input
+              type="number"
+              placeholder="Amount of tokens"
+              value={purchaseAmount}
+              onChange={(e) => setPurchaseAmount(e.target.value)}
+              step="0.000001"
+              min="0"
+              className="w-full"
+            />
+            <div className="mt-2 text-sm text-gray-500">
+              Total cost: {purchaseAmount && selectedToken?.price 
+                ? `${(Number(purchaseAmount) * Number(selectedToken.price) / 10**6).toFixed(6)} USDC` 
+                : '0 USDC'}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowBuyDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBuyTokens}
+              disabled={!purchaseAmount || isPurchasing}
+            >
+              {isPurchasing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Confirm Purchase'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1548,6 +1548,11 @@ export const CONTRACTS = {
         }
       ]
     },
+    DAI: {
+      //address: "USDC_ADDRESS",
+      address: "0x76Bc32CCc4b9f06967cF9D298A748F3abB5A10Fc",
+      
+    },
     USDC: {
       //address: "USDC_ADDRESS",
       address: "0x76Bc32CCc4b9f06967cF9D298A748F3abB5A10Fc",

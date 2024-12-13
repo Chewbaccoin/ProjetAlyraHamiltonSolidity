@@ -7,7 +7,14 @@ async function main() {
     const [deployer] = await ethers.getSigners();
     console.log("Deploying contracts with account:", deployer.address);
 
-    // Deploy MockUSDC first (for testnet only)
+    // Deploy MockDAI first (for testnet only)
+    console.log("\nDeploying MockDAI...");
+    const MockDAI = await ethers.getContractFactory("MockDAI");
+    const mockDAI = await MockDAI.deploy();
+    await mockDAI.waitForDeployment();
+    console.log("MockDAI deployed to:", await mockDAI.getAddress());
+
+    // Deploy MockUSDC second (for testnet only)
     console.log("\nDeploying MockUSDC...");
     const MockUSDC = await ethers.getContractFactory("MockUSDC");
     const mockUSDC = await MockUSDC.deploy();
@@ -32,7 +39,7 @@ async function main() {
     // Deploy the Swap contract
     console.log("\nDeploying PumpMusicSwap...");
     const PumpMusicSwap = await ethers.getContractFactory("PumpMusicSwap");
-    const swap = await PumpMusicSwap.deploy(await mockUSDC.getAddress());
+    const swap = await PumpMusicSwap.deploy(await mockDAI.getAddress());
     await swap.waitForDeployment();
     console.log("PumpMusicSwap deployed to:", await swap.getAddress());
 
@@ -47,8 +54,8 @@ async function main() {
         "EAT",
         100, // 0.001% royalty
         365 * 24 * 60 * 60, // 1 year duration
-        ethers.parseUnits("1", 6), // 1 USDC price
-        await mockUSDC.getAddress()
+        ethers.parseUnits("1", 18), // 1 DAI price
+        await mockDAI.getAddress()
     );
     const receipt = await createTokenTx.wait();
     
@@ -61,7 +68,7 @@ async function main() {
     // Print deployment summary
     console.log("\nDeployment Summary:");
     console.log("====================");
-    console.log("MockUSDC:", await mockUSDC.getAddress());
+    console.log("MockDAI:", await mockDAI.getAddress());
     console.log("SBT:", await sbt.getAddress());
     console.log("Factory:", await factory.getAddress());
     console.log("Swap:", await swap.getAddress());
@@ -72,7 +79,7 @@ async function main() {
         console.log("\nVerifying contracts on Basescan...");
         
         await hre.run("verify:verify", {
-            address: await mockUSDC.getAddress(),
+            address: await mockDAI.getAddress(),
             constructorArguments: []
         });
 
@@ -88,7 +95,7 @@ async function main() {
 
         await hre.run("verify:verify", {
             address: await swap.getAddress(),
-            constructorArguments: [await mockUSDC.getAddress()]
+            constructorArguments: [await mockDAI.getAddress()]
         });
     }
 }

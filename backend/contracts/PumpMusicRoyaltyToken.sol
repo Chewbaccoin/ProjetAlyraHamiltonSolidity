@@ -120,6 +120,16 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
         require(amount > 0, "Amount must be greater than 0");
         
         uint256 cost = amount * tokenPrice;
+        require(cost > 0, "Invalid cost calculation");
+        
+        // Vérifier le solde USDC de l'acheteur
+        uint256 buyerBalance = usdcToken.balanceOf(msg.sender);
+        require(buyerBalance >= cost, "Insufficient USDC balance");
+        
+        // Vérifier l'allowance USDC
+        uint256 allowance = usdcToken.allowance(msg.sender, address(this));
+        require(allowance >= cost, "Insufficient USDC allowance");
+        
         require(usdcToken.transferFrom(msg.sender, owner(), cost), "USDC transfer failed");
         
         _transfer(owner(), msg.sender, amount);
