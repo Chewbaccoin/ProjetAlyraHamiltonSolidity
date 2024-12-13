@@ -25,8 +25,8 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
     // State variables
     RoyaltyInfo public royaltyInfo;
     uint256 public constant PLATFORM_FEE = 300; // 3% in basis points
-    uint256 public tokenPrice;                  // Token price in USDC
-    IERC20 public usdcToken;                   // Reference to USDC contract
+    uint256 public tokenPrice;                  // Token price in DAI (18 decimals)
+    IERC20 public immutable daiToken;                    // Reference to DAI contract
     bool public isListedForSale;               // Token sale status
     
     // Mapping to track last royalty claims
@@ -38,26 +38,38 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
     event TokensListed(uint256 price);
     event TokensPurchased(address indexed buyer, uint256 amount, uint256 price);
 
+    // Errors
+    error RoyaltyPeriodExpired();
+    error NoTokensOwned();
+    error NoRoyaltiesToClaim();
+    error ShareTooSmall();
+    error TransferFailed();
+    error InvalidPrice();
+    error TokensNotListed();
+    error InvalidAmount();
+    error InsufficientBalance();
+    error InsufficientAllowance();
+
     /// @notice Contract constructor
     /// @dev Initializes the token with its base parameters
     /// @param name Token name
     /// @param symbol Token symbol
     /// @param _royaltyPercentage Royalty percentage (in basis points)
     /// @param _duration Rights validity duration in seconds
-    /// @param _tokenPrice Initial token price in USDC
-    /// @param _usdcAddress USDC contract address
+    /// @param _tokenPrice Initial token price in DAI (18 decimals)
+    /// @param _daiAddress DAI contract address
     constructor(
         string memory name,
         string memory symbol,
         uint256 _royaltyPercentage,
         uint256 _duration,
         uint256 _tokenPrice,
-        address _usdcAddress
+        address _daiAddress
     ) ERC20(name, symbol) Ownable(msg.sender) {
         royaltyInfo.royaltyPercentage = _royaltyPercentage;
         royaltyInfo.expirationDate = block.timestamp + _duration;
         tokenPrice = _tokenPrice;
-        usdcToken = IERC20(_usdcAddress);
+        daiToken = IERC20(_daiAddress);
         _mint(msg.sender, 1_000_000_000 * 10**decimals()); // 1 milliard de tokens
     }
 
@@ -65,7 +77,7 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
     /// @dev Deduct platform fees and update total royalties
     /// @param amount Amount of royalties to distribute
     function distributeRoyalties(uint256 amount) external nonReentrant {
-        require(block.timestamp < royaltyInfo.expirationDate, "Royalty period expired");
+        if (block.timestamp >= royaltyInfo.expirationDate) revert RoyaltyPeriodExpired();
         
         // Calculate platform fees
         uint256 platformFeeAmount = (amount * PLATFORM_FEE) / 10000;
@@ -83,15 +95,15 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
     /// @notice Allow holders to claim their royalties
     /// @dev Calculate and transfer royalty share based on owned tokens
     function claimRoyalties() external nonReentrant {
-        require(balanceOf(msg.sender) > 0, "No tokens owned");
-        require(royaltyInfo.totalRoyalties > 0, "No royalties to claim");
+        if (balanceOf(msg.sender) == 0) revert NoTokensOwned();
+        if (royaltyInfo.totalRoyalties == 0) revert NoRoyaltiesToClaim();
         
         // Modify calculation to avoid precision loss
         uint256 userBalance = balanceOf(msg.sender);
         uint256 supply = totalSupply();
         // Calculate percentage first, then multiply by total royalties
         uint256 share = (userBalance * 1e18 / supply) * royaltyInfo.totalRoyalties / 1e18;
-        require(share > 0, "Share too small");
+        if (share == 0) revert ShareTooSmall();
         
         royaltyInfo.totalRoyalties -= share;
         lastClaimTime[msg.sender] = block.timestamp;
@@ -104,33 +116,34 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
 
     /// @notice List tokens for sale
     /// @dev Only callable by the owner
-    /// @param _price Sale price in USDC
+    /// @param _price Sale price in DAI (18 decimals)
     function listTokensForSale(uint256 _price) external onlyOwner {
-        require(_price > 0, "Price must be greater than 0");
+        if (_price == 0) revert InvalidPrice();
         tokenPrice = _price;
         isListedForSale = true;
         emit TokensListed(_price);
     }
 
     /// @notice Allow purchase of tokens
-    /// @dev Transfer USDC to seller and tokens to buyer
-    /// @param amount Number of tokens to purchase
+    /// @dev Transfer DAI to seller and tokens to buyer
+    /// @param amount Number of tokens to purchase (in wei)
     function purchaseTokens(uint256 amount) external nonReentrant {
-        require(isListedForSale, "Tokens not listed for sale");
-        require(amount > 0, "Amount must be greater than 0");
+        if (!isListedForSale) revert TokensNotListed();
+        if (amount == 0) revert InvalidAmount();
         
-        uint256 cost = amount * tokenPrice;
-        require(cost > 0, "Invalid cost calculation");
+        // Calculate cost in DAI (both DAI and our token use 18 decimals)
+        uint256 cost = (amount * tokenPrice) / (10**decimals());
+        if (cost == 0) revert InvalidPrice();
         
-        // Verify buyer's USDC balance
-        uint256 buyerBalance = usdcToken.balanceOf(msg.sender);
-        require(buyerBalance >= cost, "Insufficient USDC balance");
+        // Verify buyer's DAI balance
+        uint256 buyerBalance = daiToken.balanceOf(msg.sender);
+        if (buyerBalance < cost) revert InsufficientBalance();
         
-        // Verify USDC allowance
-        uint256 allowance = usdcToken.allowance(msg.sender, address(this));
-        require(allowance >= cost, "Insufficient USDC allowance");
+        // Verify DAI allowance
+        uint256 allowance = daiToken.allowance(msg.sender, address(this));
+        if (allowance < cost) revert InsufficientAllowance();
         
-        require(usdcToken.transferFrom(msg.sender, owner(), cost), "USDC transfer failed");
+        require(daiToken.transferFrom(msg.sender, owner(), cost), "DAI transfer failed");
         
         _transfer(owner(), msg.sender, amount);
         emit TokensPurchased(msg.sender, amount, cost);

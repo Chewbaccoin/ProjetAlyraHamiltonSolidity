@@ -52,7 +52,7 @@ describe("ArtistSBT", function () {
             await artistSBT.verifyArtist(artist1.address);
             await expect(
                 artistSBT.verifyArtist(artist1.address)
-            ).to.be.revertedWith("Artist already verified");
+            ).to.be.revertedWithCustomError(artistSBT, "ArtistAlreadyVerified");
         });
     });
 
@@ -78,7 +78,7 @@ describe("ArtistSBT", function () {
         it("should not allow revoking a non-verified artist", async function () {
             await expect(
                 artistSBT.revokeVerification(artist2.address)
-            ).to.be.revertedWith("Not a verified artist");
+            ).to.be.revertedWithCustomError(artistSBT, "NotVerifiedArtist");
         });
     });
 
@@ -111,7 +111,7 @@ describe("ArtistSBT", function () {
         it("should not allow token transfers", async function () {
             await expect(
                 artistSBT.connect(artist1).transferFrom(artist1.address, artist2.address, 0)
-            ).to.be.revertedWith("SBT: transfer not allowed");
+            ).to.be.revertedWithCustomError(artistSBT, "SBTTransferNotAllowed");
         });
 
         it("should not allow secure token transfers", async function () {
@@ -121,7 +121,68 @@ describe("ArtistSBT", function () {
                     artist2.address,
                     0
                 )
-            ).to.be.revertedWith("SBT: transfer not allowed");
+            ).to.be.revertedWithCustomError(artistSBT, "SBTTransferNotAllowed");
+        });
+    });
+
+    describe("Get Verified Artists", function () {
+        it("should return empty array when no artists are verified", async function () {
+            const artists = await artistSBT.getVerifiedArtists();
+            expect(artists).to.be.an('array').that.is.empty;
+        });
+
+        it("should return array with single verified artist", async function () {
+            await artistSBT.verifyArtist(artist1.address);
+            const artists = await artistSBT.getVerifiedArtists();
+            expect(artists).to.have.lengthOf(1);
+            expect(artists[0]).to.equal(artist1.address);
+        });
+
+        it("should return array with multiple verified artists", async function () {
+            await artistSBT.verifyArtist(artist1.address);
+            await artistSBT.verifyArtist(artist2.address);
+            const artists = await artistSBT.getVerifiedArtists();
+            expect(artists).to.have.lengthOf(2);
+            expect(artists).to.include(artist1.address);
+            expect(artists).to.include(artist2.address);
+        });
+
+        it("should not include revoked artists", async function () {
+            await artistSBT.verifyArtist(artist1.address);
+            await artistSBT.verifyArtist(artist2.address);
+            await artistSBT.revokeVerification(artist1.address);
+            
+            const artists = await artistSBT.getVerifiedArtists();
+            expect(artists).to.have.lengthOf(1);
+            expect(artists[0]).to.equal(artist2.address);
+        });
+    });
+
+    describe("Get Revoked Artists", function () {
+        it("should return empty array when no artists are revoked", async function () {
+            const revokedArtists = await artistSBT.getRevokedArtists();
+            expect(revokedArtists).to.be.an('array').that.is.empty;
+        });
+
+        it("should return array with single revoked artist", async function () {
+            await artistSBT.verifyArtist(artist1.address);
+            await artistSBT.revokeVerification(artist1.address);
+            
+            const revokedArtists = await artistSBT.getRevokedArtists();
+            expect(revokedArtists).to.have.lengthOf(1);
+            expect(revokedArtists[0]).to.equal(artist1.address);
+        });
+
+        it("should return array with multiple revoked artists", async function () {
+            await artistSBT.verifyArtist(artist1.address);
+            await artistSBT.verifyArtist(artist2.address);
+            await artistSBT.revokeVerification(artist1.address);
+            await artistSBT.revokeVerification(artist2.address);
+            
+            const revokedArtists = await artistSBT.getRevokedArtists();
+            expect(revokedArtists).to.have.lengthOf(2);
+            expect(revokedArtists).to.include(artist1.address);
+            expect(revokedArtists).to.include(artist2.address);
         });
     });
 }); 

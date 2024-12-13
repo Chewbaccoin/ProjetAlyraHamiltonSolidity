@@ -5,6 +5,7 @@ import CreateToken from './pages/CreateToken'
 import TokenMarket from './pages/TokenMarket'
 import SwapTokens from './pages/SwapTokens'
 import Dashboard from './pages/Dashboard'
+import Admin from './pages/Admin'
 const router = createBrowserRouter([
   {
     path: "/",
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
   {
     path: "/dashboard",
     element: <Dashboard />,
+  },
+  {
+    path: "/admin",
+    element: <Admin />,
   }
 ])
 

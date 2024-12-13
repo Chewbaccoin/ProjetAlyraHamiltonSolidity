@@ -7,9 +7,9 @@ describe("PumpMusicTokenFactory", function () {
     async function deployFactoryFixture() {
         const [owner, artist1, artist2, nonArtist] = await ethers.getSigners();
 
-        // Deploy MockUSDC
-        const MockUSDC = await ethers.getContractFactory("MockUSDC");
-        const mockUSDC = await MockUSDC.deploy();
+        // Deploy MockDAI
+        const MockDAI = await ethers.getContractFactory("MockDAI");
+        const mockDAI = await MockDAI.deploy();
 
         // Deploy ArtistSBT
         const ArtistSBT = await ethers.getContractFactory("ArtistSBT");
@@ -30,14 +30,14 @@ describe("PumpMusicTokenFactory", function () {
             symbol: "TMT",
             royaltyPercentage: 100, // 1%
             duration: 365 * 24 * 60 * 60, // 1 year
-            tokenPrice: ethers.parseUnits("1", 6), // 1 USDC
-            usdcAddress: await mockUSDC.getAddress()
+            tokenPrice: ethers.parseEther("1"), // 1 DAI (18 decimals)
+            daiAddress: await mockDAI.getAddress()
         };
 
         return { 
             factory, 
             artistSBT, 
-            mockUSDC, 
+            mockDAI, 
             owner, 
             artist1, 
             artist2, 
@@ -68,9 +68,15 @@ describe("PumpMusicTokenFactory", function () {
                 tokenParams.royaltyPercentage,
                 tokenParams.duration,
                 tokenParams.tokenPrice,
-                tokenParams.usdcAddress
+                tokenParams.daiAddress
             )).to.emit(factory, "TokenCreated")
-              .withArgs(artist1.address, anyValue);
+              .withArgs(
+                  artist1.address,
+                  anyValue,
+                  tokenParams.name,
+                  tokenParams.symbol,
+                  tokenParams.royaltyPercentage
+              );
         });
 
         it("Should prevent non-artists from creating tokens", async function () {
@@ -82,7 +88,7 @@ describe("PumpMusicTokenFactory", function () {
                 tokenParams.royaltyPercentage,
                 tokenParams.duration,
                 tokenParams.tokenPrice,
-                tokenParams.usdcAddress
+                tokenParams.daiAddress
             )).to.be.revertedWith("Only verified artists can create tokens");
         });
 
@@ -96,7 +102,7 @@ describe("PumpMusicTokenFactory", function () {
                 tokenParams.royaltyPercentage,
                 tokenParams.duration,
                 tokenParams.tokenPrice,
-                tokenParams.usdcAddress
+                tokenParams.daiAddress
             )).to.be.revertedWith("Name cannot be empty");
 
             // Test empty symbol
@@ -106,7 +112,7 @@ describe("PumpMusicTokenFactory", function () {
                 tokenParams.royaltyPercentage,
                 tokenParams.duration,
                 tokenParams.tokenPrice,
-                tokenParams.usdcAddress
+                tokenParams.daiAddress
             )).to.be.revertedWith("Symbol cannot be empty");
 
             // Test zero duration
@@ -116,7 +122,7 @@ describe("PumpMusicTokenFactory", function () {
                 tokenParams.royaltyPercentage,
                 0,
                 tokenParams.tokenPrice,
-                tokenParams.usdcAddress
+                tokenParams.daiAddress
             )).to.be.revertedWith("Duration must be greater than 0");
 
             // Test zero token price
@@ -126,10 +132,10 @@ describe("PumpMusicTokenFactory", function () {
                 tokenParams.royaltyPercentage,
                 tokenParams.duration,
                 0,
-                tokenParams.usdcAddress
+                tokenParams.daiAddress
             )).to.be.revertedWith("Token price must be greater than 0");
 
-            // Test zero address for USDC
+            // Test zero address for DAI
             await expect(factory.connect(artist1).createToken(
                 tokenParams.name,
                 tokenParams.symbol,
@@ -137,7 +143,7 @@ describe("PumpMusicTokenFactory", function () {
                 tokenParams.duration,
                 tokenParams.tokenPrice,
                 ethers.ZeroAddress
-            )).to.be.revertedWith("Invalid USDC address");
+            )).to.be.revertedWith("Invalid DAI address");
         });
 
         it("Should transfer token ownership to the artist", async function () {
@@ -149,7 +155,7 @@ describe("PumpMusicTokenFactory", function () {
                 tokenParams.royaltyPercentage,
                 tokenParams.duration,
                 tokenParams.tokenPrice,
-                tokenParams.usdcAddress
+                tokenParams.daiAddress
             );
             
             const receipt = await tx.wait();
@@ -174,7 +180,7 @@ describe("PumpMusicTokenFactory", function () {
                 tokenParams.royaltyPercentage,
                 tokenParams.duration,
                 tokenParams.tokenPrice,
-                tokenParams.usdcAddress
+                tokenParams.daiAddress
             );
 
             await factory.connect(artist1).createToken(
@@ -183,7 +189,7 @@ describe("PumpMusicTokenFactory", function () {
                 tokenParams.royaltyPercentage,
                 tokenParams.duration,
                 tokenParams.tokenPrice,
-                tokenParams.usdcAddress
+                tokenParams.daiAddress
             );
 
             const artistTokens = await factory.getArtistTokens(artist1.address);
@@ -200,7 +206,7 @@ describe("PumpMusicTokenFactory", function () {
                 tokenParams.royaltyPercentage,
                 tokenParams.duration,
                 tokenParams.tokenPrice,
-                tokenParams.usdcAddress
+                tokenParams.daiAddress
             );
 
             await factory.connect(artist2).createToken(
@@ -209,7 +215,7 @@ describe("PumpMusicTokenFactory", function () {
                 tokenParams.royaltyPercentage,
                 tokenParams.duration,
                 tokenParams.tokenPrice,
-                tokenParams.usdcAddress
+                tokenParams.daiAddress
             );
 
             const allTokens = await factory.getAllTokens();

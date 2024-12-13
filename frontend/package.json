@@ -27,6 +27,7 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.0.2",
     "tailwind-merge": "^2.5.5",
+    "use-debounce": "^10.0.4",
     "viem": "^2.21.54",
     "wagmi": "^2.13.5"
   },

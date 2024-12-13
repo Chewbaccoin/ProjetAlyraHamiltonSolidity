@@ -138,7 +138,7 @@ const CreateToken = () => {
             </div>
 
             {isSuccess ? (
-              <Alert className="max-w-md" variant="success">
+              <Alert className="max-w-md mt-20" variant="success">
                 <AlertDescription>
                   Token created successfully!<br />You can now manage it in your dashboard.
                 </AlertDescription>

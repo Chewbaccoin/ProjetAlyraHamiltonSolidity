@@ -4,6 +4,11 @@ const { ethers } = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("PumpMusicSwap", function () {
+    // Add constants
+    const BASIS_POINTS = 1000;
+    const SWAP_FEE = 30;
+    const SCALE_FACTOR = 1e12;
+
     async function deploySwapFixture() {
         const [owner, user1, user2] = await ethers.getSigners();
 
@@ -185,16 +190,14 @@ describe("PumpMusicSwap", function () {
         it("Should return correct token price", async function () {
             const { swap, mockUSDC, token1, user1 } = await loadFixture(deploySwapFixture);
             
-            // Add liquidity with 2 USDC per token ratio
-            const tokenAmount = ethers.parseEther("1000"); // 1000 tokens (18 decimals)
-            const usdcAmount = ethers.parseUnits("2000", 6); // 2000 USDC (6 decimals)
+            const tokenAmount = ethers.parseEther("1000");
+            const usdcAmount = ethers.parseUnits("2000", 6);
         
             await token1.connect(user1).approve(await swap.getAddress(), tokenAmount);
             await mockUSDC.connect(user1).approve(await swap.getAddress(), usdcAmount);
             await swap.connect(user1).addLiquidity(await token1.getAddress(), tokenAmount, usdcAmount);
         
             const price = await swap.getTokenPrice(await token1.getAddress());
-            // Price should be 2 USDC per token (scaled to 18 decimals)
             expect(price).to.equal(ethers.parseEther("2")); 
         });
     });

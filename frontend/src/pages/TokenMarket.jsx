@@ -37,11 +37,12 @@ const TokenMarket = () => {
     args: [selectedToken?.address ?? '0x', 0n], // Default values until actual execution
   });
   
-  const { data: purchaseSimulation } = useSimulateContract({
+  const { data: purchaseSimulation, refetch: simulatePurchase } = useSimulateContract({
     address: selectedToken?.address ?? '0x',
     abi: CONTRACTS.RoyaltyToken.abi,
     functionName: 'purchaseTokens',
-    args: [0n], // Default value until actual execution
+    args: [parseUnits(purchaseAmount || '0', 18)],
+    enabled: false, // Only simulate when explicitly requested
   });
   
 
@@ -124,20 +125,8 @@ const TokenMarket = () => {
       enabled: !!tokenAddress && !!CONTRACTS?.RoyaltyToken?.abi,
     });
 
-    // Ajout de logs pour le débogage
-    //console.log('Token Address:', tokenAddress);
-
     useEffect(() => {
-      if (tokenAddress) {
-        /*
-        console.log('Token Address:', tokenAddress);
-        console.log('Token ABI:', CONTRACTS?.RoyaltyToken?.abi);
-        console.log('Token Name:', tokenName);
-        console.log('Token Symbol:', tokenSymbol);
-        console.log('Token Price:', currentTokenPrice);
-        console.log('Is Listed:', isTokenListed);
-        */
-      }
+      if (tokenAddress) {}
     }, [tokenAddress, tokenName, tokenSymbol, currentTokenPrice, isTokenListed]);
 
     // Fonction utilitaire pour formater le pourcentage des royalties
@@ -233,9 +222,7 @@ const TokenMarket = () => {
     );
   };
 
-  useEffect(() => {
-    console.log('CONTRACTS:', CONTRACTS);
-  }, []);
+  useEffect(() => {}, []);
 
   // Affiche un loader pendant le chargement des données
   if (isRoyaltyLoading) {
@@ -246,15 +233,26 @@ const TokenMarket = () => {
     );
   }
   
-  // Déplacez handleBuyTokens en dehors de TokenCard
+  // Modified handleBuyTokens function
   const handleBuyTokens = async () => {
     try {
+      if (!selectedToken?.address || !selectedToken?.price) {
+        throw new Error('Invalid token selection or price information');
+      }
+      
       setIsPurchasing(true);
       
+      // Add validation for purchaseAmount
+      if (!purchaseAmount || isNaN(purchaseAmount) || purchaseAmount <= 0) {
+        throw new Error('Please enter a valid purchase amount');
+      }
+
+      // Calculate exact amounts using BigInt to avoid precision issues
       const tokenAmount = parseUnits(purchaseAmount, 18);
       const pricePerToken = BigInt(selectedToken.price);
-      const costInDAI = tokenAmount * pricePerToken / BigInt(10n ** 18n);
-      
+      const totalCost = (pricePerToken * tokenAmount) / BigInt(10**18);
+
+      // First check DAI allowance and approve if needed
       const currentAllowance = await readContract(config, {
         address: CONTRACTS.DAI.address,
         abi: CONTRACTS.DAI.abi,
@@ -262,23 +260,26 @@ const TokenMarket = () => {
         args: [address, selectedToken.address],
       });
 
-      if (currentAllowance < costInDAI) {
+      if (currentAllowance < totalCost) {
+        console.log('Approving DAI spend...');
         const approveHash = await writeContract({
           address: CONTRACTS.DAI.address,
           abi: CONTRACTS.DAI.abi,
           functionName: 'approve',
-          args: [selectedToken.address, costInDAI],
+          args: [selectedToken.address, totalCost],
         });
         await waitForTransactionReceipt(config, { hash: approveHash });
       }
 
-      const purchaseHash = await writeContract({
-        address: selectedToken.address,
-        abi: CONTRACTS.RoyaltyToken.abi,
-        functionName: 'purchaseTokens',
-        args: [tokenAmount],
-      });
+      // Now simulate the purchase
+      const simulation = await simulatePurchase();
+      if (!simulation?.request) {
+        throw new Error('Purchase simulation failed. Please check your balance and try again.');
+      }
 
+      // Execute the purchase
+      console.log('Executing purchase...');
+      const purchaseHash = await writeContract(simulation.request);
       await waitForTransactionReceipt(config, { hash: purchaseHash });
       
       setShowBuyDialog(false);
@@ -286,7 +287,14 @@ const TokenMarket = () => {
       
     } catch (error) {
       console.error('Error during purchase:', error);
-      alert(`Purchase failed: ${error.message}`);
+      // Provide more specific error messages
+      if (error.message.includes('insufficient')) {
+        alert('Insufficient balance to complete the purchase');
+      } else if (error.message.includes('user rejected')) {
+        alert('Transaction was rejected');
+      } else {
+        alert(`Purchase failed: ${error.message}`);
+      }
     } finally {
       setIsPurchasing(false);
     }

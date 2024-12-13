@@ -4,10 +4,13 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import '../../styles/Header.css';
+import { useAccount } from 'wagmi';
 
 const Header = () => {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const { address } = useAccount();
+  const isAdmin = address?.toLowerCase() === import.meta.env.VITE_ADMIN_ADDRESS?.toLowerCase();
 
   // Avoid hydration issues
   useEffect(() => {
@@ -19,7 +22,8 @@ const Header = () => {
     { label: 'Create Token', path: '/create' },
     { label: 'Swap', path: '/swap' },
     { label: 'Market', path: '/market' },
-    { label: 'Dashboard', path: '/dashboard' }
+    { label: 'Dashboard', path: '/dashboard' },
+    ...(isAdmin ? [{ label: 'Admin', path: '/admin' }] : [])
   ];
 
   if (!mounted) {

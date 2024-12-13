@@ -111,7 +111,7 @@ const Dashboard = () => {
             <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
               <div className="text-sm text-gray-500 dark:text-gray-400">Price</div>
               <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                {tokenPrice ? `${(Number(tokenPrice) / 1e18).toFixed(6)} DAI` : "N/A"}
+                {tokenPrice ? `${(Number(tokenPrice) / 1e18).toFixed(8)} DAI` : "N/A"}
               </div>
             </div>
             <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">

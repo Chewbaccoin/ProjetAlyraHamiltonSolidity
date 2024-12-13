@@ -9,8 +9,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @dev Inherits from ERC20 and allows minting for tests
 contract MockUSDC is ERC20, Ownable {
     constructor() ERC20("USD Coin", "USDC") Ownable(msg.sender) {
-        // Mint 1 billion tokens on deployment (with 18 decimals)
-        _mint(msg.sender, 1_000_000_000 * 10**decimals());
+        // Mint 1 billion tokens on deployment (with 6 decimals)
+        _mint(msg.sender, 1_000_000_000 * 10**6);
     }
 
     /// @notice Allows creating tokens for testing

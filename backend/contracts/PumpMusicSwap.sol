@@ -22,16 +22,16 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         bool isActive;
     }
 
-    // Constants
+    // CONSTANTS
     uint256 public constant SWAP_FEE = 30; // 0.3% in basis points
+    uint256 private constant SCALE_FACTOR = 1e12; // For price calculations
+    uint256 private constant BASIS_POINTS = 1000; // For fee calculations
     
-    // Reference USDC token
+    // STATE VARIABLES
     IERC20 public immutable USDC;
-    
-    // Liquidity pools mapping
     mapping(address => LiquidityPool) public liquidityPools;
     
-    // Events
+    // EVENTS
     event LiquidityAdded(address indexed token, uint256 tokenAmount, uint256 usdcAmount);
     event LiquidityRemoved(address indexed token, uint256 tokenAmount, uint256 usdcAmount);
     event TokenSwapped(
@@ -48,6 +48,7 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         USDC = IERC20(_usdc);
     }
 
+    // LIQUIDITY MANAGEMENT FUNCTIONS
     /// @notice Adds liquidity to a pool
     /// @param tokenAddress Royalty token address
     /// @param tokenAmount Amount of tokens to add
@@ -101,27 +102,7 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         emit LiquidityRemoved(tokenAddress, tokenAmount, usdcAmount);
     }
 
-    /// @notice Calculates the output amount for a swap
-    /// @dev Uses constant product formula (x * y = k)
-    /// @param amountIn Input token amount
-    /// @param reserveIn Input token reserve
-    /// @param reserveOut Output token reserve
-    /// @return Output token amount
-    function getSwapAmount(
-        uint256 amountIn,
-        uint256 reserveIn,
-        uint256 reserveOut
-    ) public pure returns (uint256) {
-        require(amountIn > 0 && reserveIn > 0 && reserveOut > 0, "Invalid amounts");
-        
-        // Apply 0.3% fee
-        uint256 amountInWithFee = amountIn * (1000 - SWAP_FEE);  // SWAP_FEE = 30
-        uint256 numerator = amountInWithFee * reserveOut;
-        uint256 denominator = (reserveIn * 1000) + amountInWithFee;
-        
-        return numerator / denominator;
-    }
-
+    // SWAP FUNCTIONS
     /// @notice Swaps royalty tokens for USDC
     /// @param tokenAddress Token address to swap
     /// @param tokenAmount Amount of tokens to swap
@@ -222,13 +203,34 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         emit TokenSwapped(fromToken, toToken, msg.sender, fromAmount, toAmount);
     }
 
+    // VIEW FUNCTIONS
     /// @notice Gets the current price of a token in USDC
     /// @param tokenAddress Token address
     /// @return Token price in USDC (multiplied by 1e18 for precision)
     function getTokenPrice(address tokenAddress) external view returns (uint256) {
         LiquidityPool memory pool = liquidityPools[tokenAddress];
         require(pool.isActive && pool.tokenReserve > 0, "Invalid pool");
-        // Scale USDC amount (6 decimals) up to 18 decimals before division
-        return (pool.usdcReserve * 1e18 * 1e12) / pool.tokenReserve;
+        return (pool.usdcReserve * 1e18 * SCALE_FACTOR) / pool.tokenReserve;
+    }
+
+    // INTERNAL FUNCTIONS
+    /// @notice Calculates the output amount for a swap
+    /// @dev Uses constant product formula (x * y = k)
+    /// @param amountIn Input token amount
+    /// @param reserveIn Input token reserve
+    /// @param reserveOut Output token reserve
+    /// @return Output token amount
+    function getSwapAmount(
+        uint256 amountIn,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) public pure returns (uint256) {
+        require(amountIn > 0 && reserveIn > 0 && reserveOut > 0, "Invalid amounts");
+        
+        uint256 amountInWithFee = amountIn * (BASIS_POINTS - SWAP_FEE);
+        uint256 numerator = amountInWithFee * reserveOut;
+        uint256 denominator = (reserveIn * BASIS_POINTS) + amountInWithFee;
+        
+        return numerator / denominator;
     }
 }

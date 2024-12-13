@@ -13,12 +13,33 @@ contract PumpMusicTokenFactory is Ownable {
     /// @dev Immutable as the address will never change after deployment
     ArtistSBT public immutable artistSBT;
     // Mapping to track tokens created by artist
-    mapping(address => PumpMusicRoyaltyToken[]) public artistTokens;
+    mapping(address => PumpMusicRoyaltyToken[]) private _artistTokens;
     
     /// @notice Stores all created tokens
-    PumpMusicRoyaltyToken[] public allTokens;
+    PumpMusicRoyaltyToken[] private _allTokens;
 
-    event TokenCreated(address indexed artist, address tokenAddress);
+    event TokenCreated(
+        address indexed artist,
+        address tokenAddress,
+        string name,
+        string symbol,
+        uint256 royaltyPercentage
+    );
+
+    modifier validTokenParameters(
+        string memory name,
+        string memory symbol,
+        uint256 duration,
+        uint256 tokenPrice,
+        address daiAddress
+    ) {
+        require(bytes(name).length > 0, "Name cannot be empty");
+        require(bytes(symbol).length > 0, "Symbol cannot be empty");
+        require(duration > 0, "Duration must be greater than 0");
+        require(tokenPrice > 0, "Token price must be greater than 0");
+        require(daiAddress != address(0), "Invalid DAI address");
+        _;
+    }
 
     constructor(address _artistSBT) Ownable(msg.sender) {
         artistSBT = ArtistSBT(_artistSBT);
@@ -31,7 +52,7 @@ contract PumpMusicTokenFactory is Ownable {
     /// @param royaltyPercentage Royalty percentage
     /// @param duration Rights validity duration
     /// @param tokenPrice Initial token price
-    /// @param usdcAddress USDC contract address
+    /// @param daiAddress DAI contract address (18 decimals)
     /// @return address Address of the newly created token
     function createToken(
         string memory name,
@@ -39,18 +60,11 @@ contract PumpMusicTokenFactory is Ownable {
         uint256 royaltyPercentage,
         uint256 duration,
         uint256 tokenPrice,
-        address usdcAddress
-    ) external returns (address) {
+        address daiAddress
+    ) external validTokenParameters(name, symbol, duration, tokenPrice, daiAddress) returns (address) {
         // Verify that the caller owns an artist SBT
         // This verification uses the isArtist function from the SBT contract
         require(artistSBT.isArtist(msg.sender), "Only verified artists can create tokens");
-
-        // Parameter validation
-        require(bytes(name).length > 0, "Name cannot be empty");
-        require(bytes(symbol).length > 0, "Symbol cannot be empty");
-        require(duration > 0, "Duration must be greater than 0");
-        require(tokenPrice > 0, "Token price must be greater than 0");
-        require(usdcAddress != address(0), "Invalid USDC address");
 
         // Create new token
         PumpMusicRoyaltyToken token = new PumpMusicRoyaltyToken(
@@ -59,16 +73,16 @@ contract PumpMusicTokenFactory is Ownable {
             royaltyPercentage,
             duration,
             tokenPrice,
-            usdcAddress
+            daiAddress
         );
         
         // Add token to both mappings
-        artistTokens[msg.sender].push(token);
-        allTokens.push(token);
+        _artistTokens[msg.sender].push(token);
+        _allTokens.push(token);
         
         token.transferOwnership(msg.sender);
         
-        emit TokenCreated(msg.sender, address(token));
+        emit TokenCreated(msg.sender, address(token), name, symbol, royaltyPercentage);
         return address(token);
     }
 
@@ -76,12 +90,12 @@ contract PumpMusicTokenFactory is Ownable {
     /// @param artist Artist's address
     /// @return PumpMusicRoyaltyToken[] List of artist's tokens
     function getArtistTokens(address artist) external view returns (PumpMusicRoyaltyToken[] memory) {
-        return artistTokens[artist];
+        return _artistTokens[artist];
     }
 
     /// @notice Retrieves all created tokens
     /// @return PumpMusicRoyaltyToken[] List of all tokens
     function getAllTokens() external view returns (PumpMusicRoyaltyToken[] memory) {
-        return allTokens;
+        return _allTokens;
     }
 }

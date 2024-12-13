@@ -11,9 +11,15 @@ describe("MockUSDC", function () {
     mockUSDC = await MockUSDC.deploy();
   });
 
-  it("Should deploy with initial supply to the owner", async function () {
+  it("Should deploy with correct initial supply to the owner", async function () {
     const ownerBalance = await mockUSDC.balanceOf(owner.address);
     expect(ownerBalance).to.equal(ethers.parseUnits("1000000000", 6));
+  });
+
+  it("Should have correct token metadata", async function () {
+    expect(await mockUSDC.name()).to.equal("USD Coin");
+    expect(await mockUSDC.symbol()).to.equal("USDC");
+    expect(await mockUSDC.decimals()).to.equal(6);
   });
 
   it("Should allow the owner to mint tokens", async function () {

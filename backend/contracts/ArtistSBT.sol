@@ -8,12 +8,20 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 /// @notice Soulbound Token contract for verified artists
 /// @dev A SBT is a non-transferable NFT that certifies artist status
 contract ArtistSBT is ERC721Upgradeable, OwnableUpgradeable {
-    // Counter to generate unique IDs for each SBT
+    // State Variables
     uint256 private _tokenIdCounter;
-    
-    // Events to track artist verification and revocation
+    mapping(address => bool) private _revokedArtists;
+    address[] private _revokedArtistsList;
+
+    // Events
     event ArtistVerified(address indexed artist, uint256 tokenId);
     event VerificationRevoked(address indexed artist, uint256 tokenId);
+
+    // Errors
+    error SBTTransferNotAllowed();
+    error ArtistAlreadyVerified();
+    error NotVerifiedArtist();
+    error TokenNotFound();
 
     function initialize() initializer public {
         __ERC721_init("PumpMusic Artist", "ARTIST");
@@ -24,7 +32,7 @@ contract ArtistSBT is ERC721Upgradeable, OwnableUpgradeable {
     /// @dev Only the contract owner can verify artists
     /// @param artist The address of the artist to verify
     function verifyArtist(address artist) external onlyOwner {
-        require(!isArtist(artist), "Artist already verified");
+        if (isArtist(artist)) revert ArtistAlreadyVerified();
         uint256 tokenId = _tokenIdCounter++;
         _safeMint(artist, tokenId);
         emit ArtistVerified(artist, tokenId);
@@ -34,9 +42,11 @@ contract ArtistSBT is ERC721Upgradeable, OwnableUpgradeable {
     /// @dev Burns the artist's SBT, removing their verification
     /// @param artist The address of the artist whose verification should be revoked
     function revokeVerification(address artist) external onlyOwner {
-        require(isArtist(artist), "Not a verified artist");
+        if (!isArtist(artist)) revert NotVerifiedArtist();
         uint256 tokenId = tokenOfOwner(artist);
         _burn(tokenId);
+        _revokedArtists[artist] = true;
+        _revokedArtistsList.push(artist);
         emit VerificationRevoked(artist, tokenId);
     }
 
@@ -79,8 +89,40 @@ contract ArtistSBT is ERC721Upgradeable, OwnableUpgradeable {
     ) internal virtual override returns (address) {
         address from = _ownerOf(tokenId);
         if (from != address(0) && to != address(0)) {
-            revert("SBT: transfer not allowed");
+            revert SBTTransferNotAllowed();
         }
         return super._update(to, tokenId, auth);
+    }
+
+    /// @notice Gets all verified artists
+    /// @dev Iterates through all tokens to find active artists
+    /// @return Array of verified artist addresses
+    function getVerifiedArtists() external view returns (address[] memory) {
+        address[] memory artists = new address[](_tokenIdCounter);
+        uint256 activeCount = 0;
+        
+        for (uint256 i = 0; i < _tokenIdCounter; i++) {
+            try this.ownerOf(i) returns (address artist) {
+                artists[activeCount] = artist;
+                activeCount++;
+            } catch {
+                continue;
+            }
+        }
+        
+        // Resize array to remove empty slots
+        address[] memory activeArtists = new address[](activeCount);
+        for (uint256 i = 0; i < activeCount; i++) {
+            activeArtists[i] = artists[i];
+        }
+        
+        return activeArtists;
+    }
+
+    /// @notice Gets all revoked artists
+    /// @dev Returns array of all addresses that have had their verification revoked
+    /// @return Array of revoked artist addresses
+    function getRevokedArtists() external view returns (address[] memory) {
+        return _revokedArtistsList;
     }
 } 

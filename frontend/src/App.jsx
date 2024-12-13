@@ -10,6 +10,7 @@ import CreateToken from './pages/CreateToken'
 import TokenMarket from './pages/TokenMarket'
 import SwapTokens from './pages/SwapTokens'
 import Dashboard from './pages/Dashboard'
+import Admin from './pages/Admin'
 import '@rainbow-me/rainbowkit/styles.css'
 import './App.css'
 
@@ -28,6 +29,7 @@ function App() {
                 <Route path="/market" element={<TokenMarket />} />
                 <Route path="/swap" element={<SwapTokens />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/admin" element={<Admin />} />
               </Routes>
             </BrowserRouter>
           </RainbowKitProvider>

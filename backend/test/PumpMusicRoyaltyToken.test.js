@@ -9,16 +9,16 @@ describe("PumpMusicRoyaltyToken", function () {
         // Get signers
         const [owner, artist, investor1, investor2] = await ethers.getSigners();
 
-        // Deploy MockUSDC
-        const MockUSDC = await ethers.getContractFactory("MockUSDC");
-        const mockUSDC = await MockUSDC.deploy();
+        // Deploy MockDAI
+        const MockDAI = await ethers.getContractFactory("MockUSDC");
+        const mockDAI = await MockDAI.deploy();
 
         // Token parameters
         const name = "Artist Token";
         const symbol = "ART";
         const royaltyPercentage = 100; // 0.001%
         const duration = 365 * 24 * 60 * 60; // 1 year
-        const tokenPrice = ethers.parseUnits("1", 6); // 1 USDC
+        const tokenPrice = ethers.parseEther("1"); // 1 DAI
 
         // Deploy RoyaltyToken
         const RoyaltyToken = await ethers.getContractFactory("PumpMusicRoyaltyToken");
@@ -28,16 +28,16 @@ describe("PumpMusicRoyaltyToken", function () {
             royaltyPercentage,
             duration,
             tokenPrice,
-            await mockUSDC.getAddress()
+            await mockDAI.getAddress()
         );
 
-        // Mint USDC to investors for testing
-        await mockUSDC.mint(investor1.address, ethers.parseUnits("10000", 6));
-        await mockUSDC.mint(investor2.address, ethers.parseUnits("10000", 6));
+        // Mint DAI to investors for testing
+        await mockDAI.mint(investor1.address, ethers.parseEther("10000"));
+        await mockDAI.mint(investor2.address, ethers.parseEther("10000"));
 
         return { 
             royaltyToken, 
-            mockUSDC, 
+            mockDAI, 
             owner, 
             artist, 
             investor1, 
@@ -76,7 +76,9 @@ describe("PumpMusicRoyaltyToken", function () {
     describe("Token Sale", function () {
         it("Should allow listing tokens for sale", async function () {
             const { royaltyToken, artist, tokenPrice } = await loadFixture(deployTokenFixture);
-            await royaltyToken.connect(artist).listTokensForSale(tokenPrice);
+            await expect(royaltyToken.connect(artist).listTokensForSale(tokenPrice))
+                .to.emit(royaltyToken, "TokensListed")
+                .withArgs(tokenPrice);
             expect(await royaltyToken.isListedForSale()).to.be.true;
             expect(await royaltyToken.tokenPrice()).to.equal(tokenPrice);
         });
@@ -89,35 +91,22 @@ describe("PumpMusicRoyaltyToken", function () {
         });
 
         it("Should handle token purchase with proper balance updates", async function () {
-            const { royaltyToken, mockUSDC, artist, investor1, tokenPrice } = await loadFixture(deployTokenFixture);
+            const { royaltyToken, mockDAI, artist, investor1, tokenPrice } = await loadFixture(deployTokenFixture);
             
             // Get initial balances
             const artistInitialTokens = await royaltyToken.balanceOf(artist.address);
             const investorInitialTokens = await royaltyToken.balanceOf(investor1.address);
-            const artistInitialUSDC = await mockUSDC.balanceOf(artist.address);
-            const investorInitialUSDC = await mockUSDC.balanceOf(investor1.address);
+            const artistInitialDAI = await mockDAI.balanceOf(artist.address);
+            const investorInitialDAI = await mockDAI.balanceOf(investor1.address);
             
-            // Let's buy just 1 token (in royalty token decimals - 18)
-            const purchaseAmount = ethers.parseEther("1");  // 1e18
-            
-            // Calculate cost in USDC
-            // In the contract: cost = amount * tokenPrice
-            // purchaseAmount is 1e18 (18 decimals)
-            // tokenPrice is 1e6 (6 decimals)
-            // So cost will be 1e18 * 1e6 = 1e24
-            const cost = purchaseAmount * tokenPrice;
-            
-            // First, mint enough USDC to the investor for the purchase
-            await mockUSDC.mint(investor1.address, cost);
+            const purchaseAmount = ethers.parseEther("1");
+            const cost = (purchaseAmount * tokenPrice) / ethers.parseEther("1");
             
             // List tokens for sale
             await royaltyToken.connect(artist).listTokensForSale(tokenPrice);
             
-            // Approve exact amount needed
-            await mockUSDC.connect(investor1).approve(await royaltyToken.getAddress(), cost);
-            
-            // Verify approval
-            const allowance = await mockUSDC.allowance(investor1.address, await royaltyToken.getAddress());
+            // Approve before purchase
+            await mockDAI.connect(investor1).approve(await royaltyToken.getAddress(), cost);
             
             // Purchase tokens
             await royaltyToken.connect(investor1).purchaseTokens(purchaseAmount);
@@ -127,10 +116,10 @@ describe("PumpMusicRoyaltyToken", function () {
                 .to.equal(investorInitialTokens + purchaseAmount);
             expect(await royaltyToken.balanceOf(artist.address))
                 .to.equal(artistInitialTokens - purchaseAmount);
-            expect(await mockUSDC.balanceOf(artist.address))
-                .to.equal(artistInitialUSDC + cost);
-            expect(await mockUSDC.balanceOf(investor1.address))
-                .to.equal(investorInitialUSDC + cost - cost); // Add from mint, subtract from purchase
+            expect(await mockDAI.balanceOf(artist.address))
+                .to.equal(artistInitialDAI + cost);
+            expect(await mockDAI.balanceOf(investor1.address))
+                .to.equal(investorInitialDAI - cost);
         });
     });
 
@@ -158,6 +147,11 @@ describe("PumpMusicRoyaltyToken", function () {
             const netRoyalties = royaltyAmount - platformFee;
             
             expect(royaltyInfo.totalRoyalties).to.equal(netRoyalties);
+
+            // Verify royalty distribution event
+            await expect(royaltyToken.connect(artist).distributeRoyalties(ethers.parseEther("1")))
+                .to.emit(royaltyToken, "RoyaltyReceived")
+                .withArgs(ethers.parseEther("1"), platformFee);
         });
 
         it("Should allow claiming royalties", async function () {
@@ -194,7 +188,7 @@ describe("PumpMusicRoyaltyToken", function () {
             // Try to distribute royalties with correct format
             await expect(
                 royaltyToken.connect(artist).distributeRoyalties(ethers.parseEther("1"))
-            ).to.be.revertedWith("Royalty period expired");
+            ).to.be.revertedWithCustomError(royaltyToken, "RoyaltyPeriodExpired");
         });
     });
 
@@ -203,7 +197,7 @@ describe("PumpMusicRoyaltyToken", function () {
             const { royaltyToken, investor1 } = await loadFixture(deployTokenFixture);
             await expect(
                 royaltyToken.connect(investor1).claimRoyalties()
-            ).to.be.revertedWith("No tokens owned");
+            ).to.be.revertedWithCustomError(royaltyToken, "NoTokensOwned");
         });
 
         it("Should prevent claiming when no royalties available", async function () {
@@ -212,23 +206,23 @@ describe("PumpMusicRoyaltyToken", function () {
             
             await expect(
                 royaltyToken.connect(investor1).claimRoyalties()
-            ).to.be.revertedWith("No royalties to claim");
+            ).to.be.revertedWithCustomError(royaltyToken, "NoRoyaltiesToClaim");
         });
 
         it("Should handle zero token purchases", async function () {
             const { royaltyToken, artist } = await loadFixture(deployTokenFixture);
-            await royaltyToken.connect(artist).listTokensForSale(ethers.parseUnits("1", 6));
+            await royaltyToken.connect(artist).listTokensForSale(ethers.parseEther("1"));
             
             await expect(
                 royaltyToken.connect(artist).purchaseTokens(0)
-            ).to.be.revertedWith("Amount must be greater than 0");
+            ).to.be.revertedWithCustomError(royaltyToken, "InvalidAmount");
         });
 
         it("Should prevent purchasing when not listed", async function () {
             const { royaltyToken, investor1 } = await loadFixture(deployTokenFixture);
             await expect(
                 royaltyToken.connect(investor1).purchaseTokens(ethers.parseEther("1"))
-            ).to.be.revertedWith("Tokens not listed for sale");
+            ).to.be.revertedWithCustomError(royaltyToken, "TokensNotListed");
         });
     });
 });

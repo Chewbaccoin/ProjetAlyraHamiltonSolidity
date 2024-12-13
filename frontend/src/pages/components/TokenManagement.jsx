@@ -27,13 +27,21 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
     functionName: 'isListedForSale',
   });
 
+  const { isLoading: isListing } = useWaitForTransactionReceipt({
+    hash: listData?.hash,
+  });
+
+  const { isLoading: isUpdating } = useWaitForTransactionReceipt({
+    hash: listData?.hash,
+  });
+
   const handleUpdatePrice = () => {
     if (!newPrice) return;
     listForSale({
       address: tokenAddress,
       abi: CONTRACTS.RoyaltyToken.abi,
       functionName: 'listTokensForSale',
-      args: [parseUnits(newPrice, 6)]
+      args: [parseUnits(newPrice, 18)]
     });
   };
 
@@ -48,12 +56,12 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
   };
 
   const handleListForSale = () => {
-    const priceToUse = newPrice || (currentPrice ? (Number(currentPrice) / 1000000).toString() : '0');
+    const priceToUse = newPrice || (currentPrice ? (Number(currentPrice) / 1e18).toString() : '0');
     listForSale({
       address: tokenAddress,
       abi: CONTRACTS.RoyaltyToken.abi,
       functionName: 'listTokensForSale',
-      args: [parseUnits(priceToUse, 6)]
+      args: [parseUnits(priceToUse, 18)]
     });
   };
 
@@ -81,13 +89,17 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
             <div className="flex gap-2">
               <Input
                 type="number"
-                placeholder={`Current: ${currentPrice ? (Number(currentPrice) / 1000000).toFixed(6) : '0'} USDC`}
+                placeholder={`Current: ${currentPrice ? (Number(currentPrice) / 1e18).toFixed(8) : '0'} DAI`}
                 value={newPrice}
                 onChange={(e) => setNewPrice(e.target.value)}
                 className="flex-1"
               />
-              <Button onClick={handleUpdatePrice} disabled={!newPrice}>
-                Update
+              <Button onClick={handleUpdatePrice} disabled={!newPrice || isUpdating}>
+                {isUpdating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'Update'
+                )}
               </Button>
             </div>
           </div>
@@ -122,10 +134,15 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
             <div className="flex gap-2">
               <Button 
                 onClick={handleListForSale} 
-                disabled={isListed}
+                disabled={isListed || isListing}
                 className="w-full"
               >
-                {isListed ? 'Already listed' : 'List for sale'}
+                {isListed ? 'Already listed' : isListing ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Listing...
+                  </div>
+                ) : 'List for sale'}
               </Button>
             </div>
           </div>
