@@ -4,18 +4,18 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @title MockUSDC
-/// @notice Contrat de simulation DAI pour les tests
-/// @dev Hérite d'ERC20 et permet le mint pour les tests
+/// @title MockDAI
+/// @notice Mock DAI contract for testing purposes
+/// @dev Inherits from ERC20 and allows minting for tests
 contract MockDAI is ERC20, Ownable {
     constructor() ERC20("DAI Coin", "DAI") Ownable(msg.sender) {
-        // Mint 1 milliard de tokens au déploiement (avec 18 décimales)
+        // Mint 1 billion tokens at deployment (with 18 decimals)
         _mint(msg.sender, 1_000_000_000 * 10**decimals());
     }
 
-    /// @notice Permet de créer des tokens pour les tests
-    /// @param to Adresse recevant les tokens
-    /// @param amount Montant à créer
+    /// @notice Allows creating tokens for testing
+    /// @param to Address receiving the tokens
+    /// @param amount Amount to create
     function mint(address to, uint256 amount) external onlyOwner {
         _mint(to, amount);
     }

@@ -15,7 +15,7 @@ contract PumpMusicTokenFactory is Ownable {
     // Mapping to track tokens created by artist
     mapping(address => PumpMusicRoyaltyToken[]) public artistTokens;
     
-    /// @notice Stocke tous les tokens créés
+    /// @notice Stores all created tokens
     PumpMusicRoyaltyToken[] public allTokens;
 
     event TokenCreated(address indexed artist, address tokenAddress);
@@ -41,18 +41,18 @@ contract PumpMusicTokenFactory is Ownable {
         uint256 tokenPrice,
         address usdcAddress
     ) external returns (address) {
-        // Vérifie que l'appelant possède un SBT d'artiste
-        // Cette vérification utilise la fonction isArtist du contrat SBT
+        // Verify that the caller owns an artist SBT
+        // This verification uses the isArtist function from the SBT contract
         require(artistSBT.isArtist(msg.sender), "Only verified artists can create tokens");
 
-        // Validation des paramètres
+        // Parameter validation
         require(bytes(name).length > 0, "Name cannot be empty");
         require(bytes(symbol).length > 0, "Symbol cannot be empty");
         require(duration > 0, "Duration must be greater than 0");
         require(tokenPrice > 0, "Token price must be greater than 0");
         require(usdcAddress != address(0), "Invalid USDC address");
 
-        // Création du nouveau token
+        // Create new token
         PumpMusicRoyaltyToken token = new PumpMusicRoyaltyToken(
             name,
             symbol,
@@ -62,7 +62,7 @@ contract PumpMusicTokenFactory is Ownable {
             usdcAddress
         );
         
-        // Ajouter le token aux deux mappings
+        // Add token to both mappings
         artistTokens[msg.sender].push(token);
         allTokens.push(token);
         
@@ -79,8 +79,8 @@ contract PumpMusicTokenFactory is Ownable {
         return artistTokens[artist];
     }
 
-    /// @notice Récupère tous les tokens créés
-    /// @return PumpMusicRoyaltyToken[] Liste de tous les tokens
+    /// @notice Retrieves all created tokens
+    /// @return PumpMusicRoyaltyToken[] List of all tokens
     function getAllTokens() external view returns (PumpMusicRoyaltyToken[] memory) {
         return allTokens;
     }

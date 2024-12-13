@@ -75,7 +75,7 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Section de mise à jour du prix */}
+          {/* Price update section */}
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-gray-900 dark:text-white">Token Price</h3>
             <div className="flex gap-2">
@@ -92,7 +92,7 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
             </div>
           </div>
 
-          {/* Section de distribution des redevances */}
+          {/* Royalties distribution section */}
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-gray-900 dark:text-white">Distribute Royalties</h3>
             <div className="flex gap-2">
@@ -116,7 +116,7 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
             </p>
           </div>
 
-          {/* Section de mise en vente du token */}
+          {/* Token listing section */}
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-gray-900 dark:text-white">List Token for Sale</h3>
             <div className="flex gap-2">

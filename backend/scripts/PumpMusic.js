@@ -69,6 +69,7 @@ async function main() {
     console.log("\nDeployment Summary:");
     console.log("====================");
     console.log("MockDAI:", await mockDAI.getAddress());
+    console.log("mockUSDC:", await mockUSDC.getAddress());
     console.log("SBT:", await sbt.getAddress());
     console.log("Factory:", await factory.getAddress());
     console.log("Swap:", await swap.getAddress());

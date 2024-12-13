@@ -13,7 +13,7 @@ const Dashboard = () => {
   const { address, isConnected } = useAccount();
   const navigate = useNavigate();
 
-  // Vérifie si l'utilisateur est un artiste
+  // Check if the user is an artist (was: Vérifie si l'utilisateur est un artiste)
   const { data: isArtist, isLoading: isCheckingArtist } = useReadContract({
     address: CONTRACTS?.ArtistSBT?.address,
     abi: CONTRACTS?.ArtistSBT?.abi,
@@ -22,7 +22,7 @@ const Dashboard = () => {
     enabled: isConnected,
   });
 
-  // Récupère tous les tokens de l'artiste
+  // Get all artist tokens (was: Récupère tous les tokens de l'artiste)
   const { data: artistTokens, isLoading: isLoadingTokens } = useReadContract({
     address: CONTRACTS?.TokenFactory?.address,
     abi: CONTRACTS?.TokenFactory?.abi,
@@ -38,12 +38,12 @@ const Dashboard = () => {
     return `${(royaltyPercentage / 100).toFixed(2)}%`;
   };
 
-  // Fonction utilitaire pour formater la date d'expiration
+  // Update date formatting from fr-FR to en-US
   const formatExpirationDate = (royaltyInfo) => {
     if (!royaltyInfo) return "N/A";
     const timestamp = Number(royaltyInfo[0]);
     if (isNaN(timestamp)) return "N/A";
-    return new Date(timestamp * 1000).toLocaleDateString('fr-FR', {
+    return new Date(timestamp * 1000).toLocaleDateString('en-US', {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
@@ -111,7 +111,7 @@ const Dashboard = () => {
             <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
               <div className="text-sm text-gray-500 dark:text-gray-400">Price</div>
               <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                {tokenPrice ? `${(Number(tokenPrice) / 1000000).toFixed(6)} USDC` : "N/A"}
+                {tokenPrice ? `${(Number(tokenPrice) / 1e18).toFixed(6)} DAI` : "N/A"}
               </div>
             </div>
             <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">

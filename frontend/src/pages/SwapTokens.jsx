@@ -9,7 +9,7 @@ const SwapTokens = () => {
       <main className="page-main">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Swap Tokens</h1>
-          {/* Ajoutez ici le contenu de votre page */}
+          {/* Add your page content here */}
         </div>
       </main>
       <Footer />

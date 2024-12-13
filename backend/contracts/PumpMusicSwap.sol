@@ -22,16 +22,16 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         bool isActive;
     }
 
-    // Constantes
-    uint256 public constant SWAP_FEE = 30; // 0.3% en base points
+    // Constants
+    uint256 public constant SWAP_FEE = 30; // 0.3% in basis points
     
-    // Token USDC de référence
+    // Reference USDC token
     IERC20 public immutable USDC;
     
-    // Mapping des pools de liquidité
+    // Liquidity pools mapping
     mapping(address => LiquidityPool) public liquidityPools;
     
-    // Événements
+    // Events
     event LiquidityAdded(address indexed token, uint256 tokenAmount, uint256 usdcAmount);
     event LiquidityRemoved(address indexed token, uint256 tokenAmount, uint256 usdcAmount);
     event TokenSwapped(
@@ -42,16 +42,16 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         uint256 amountOut
     );
 
-    /// @notice Constructeur du contrat de swap
-    /// @param _usdc Adresse du contrat USDC
+    /// @notice Contract constructor
+    /// @param _usdc USDC contract address
     constructor(address _usdc) Ownable(msg.sender) {
         USDC = IERC20(_usdc);
     }
 
-    /// @notice Ajoute de la liquidité à un pool
-    /// @param tokenAddress Adresse du token de royalties
-    /// @param tokenAmount Montant de tokens à ajouter
-    /// @param usdcAmount Montant d'USDC à ajouter
+    /// @notice Adds liquidity to a pool
+    /// @param tokenAddress Royalty token address
+    /// @param tokenAmount Amount of tokens to add
+    /// @param usdcAmount Amount of USDC to add
     function addLiquidity(
         address tokenAddress,
         uint256 tokenAmount,
@@ -61,11 +61,11 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         
         LiquidityPool storage pool = liquidityPools[tokenAddress];
         
-        // Transfert des tokens
+        // Transfer tokens
         IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokenAmount);
         USDC.transferFrom(msg.sender, address(this), usdcAmount);
         
-        // Mise à jour du pool
+        // Update pool
         pool.tokenReserve += tokenAmount;
         pool.usdcReserve += usdcAmount;
         pool.isActive = true;
@@ -73,10 +73,10 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         emit LiquidityAdded(tokenAddress, tokenAmount, usdcAmount);
     }
 
-    /// @notice Retire de la liquidité d'un pool
-    /// @dev Permet de retirer un pourcentage de la liquidité fournie
-    /// @param tokenAddress Adresse du token de royalties
-    /// @param percentage Pourcentage de liquidité à retirer (1-100)
+    /// @notice Removes liquidity from a pool
+    /// @dev Allows withdrawing a percentage of provided liquidity
+    /// @param tokenAddress Royalty token address
+    /// @param percentage Percentage of liquidity to withdraw (1-100)
     function removeLiquidity(
         address tokenAddress,
         uint256 percentage
@@ -86,27 +86,27 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         LiquidityPool storage pool = liquidityPools[tokenAddress];
         require(pool.isActive, "Pool not active");
         
-        // Calcul des montants à retirer
+        // Calculate amounts to withdraw
         uint256 tokenAmount = (pool.tokenReserve * percentage) / 100;
         uint256 usdcAmount = (pool.usdcReserve * percentage) / 100;
         
-        // Mise à jour du pool
+        // Update pool
         pool.tokenReserve -= tokenAmount;
         pool.usdcReserve -= usdcAmount;
         
-        // Transfert des tokens
+        // Transfer tokens
         IERC20(tokenAddress).transfer(msg.sender, tokenAmount);
         USDC.transfer(msg.sender, usdcAmount);
         
         emit LiquidityRemoved(tokenAddress, tokenAmount, usdcAmount);
     }
 
-    /// @notice Calcule le montant de sortie pour un swap
-    /// @dev Utilise la formule de courbe de liaison constante (x * y = k)
-    /// @param amountIn Montant de tokens en entrée
-    /// @param reserveIn Réserve du token d'entrée
-    /// @param reserveOut Réserve du token de sortie
-    /// @return Montant de tokens en sortie
+    /// @notice Calculates the output amount for a swap
+    /// @dev Uses constant product formula (x * y = k)
+    /// @param amountIn Input token amount
+    /// @param reserveIn Input token reserve
+    /// @param reserveOut Output token reserve
+    /// @return Output token amount
     function getSwapAmount(
         uint256 amountIn,
         uint256 reserveIn,
@@ -114,7 +114,7 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
     ) public pure returns (uint256) {
         require(amountIn > 0 && reserveIn > 0 && reserveOut > 0, "Invalid amounts");
         
-        // Application des frais de 0.3%
+        // Apply 0.3% fee
         uint256 amountInWithFee = amountIn * (1000 - SWAP_FEE);  // SWAP_FEE = 30
         uint256 numerator = amountInWithFee * reserveOut;
         uint256 denominator = (reserveIn * 1000) + amountInWithFee;
@@ -122,10 +122,10 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         return numerator / denominator;
     }
 
-    /// @notice Échange des tokens de royalties contre de l'USDC
-    /// @param tokenAddress Adresse du token à échanger
-    /// @param tokenAmount Montant de tokens à échanger
-    /// @param minUSDCAmount Montant minimum d'USDC attendu
+    /// @notice Swaps royalty tokens for USDC
+    /// @param tokenAddress Token address to swap
+    /// @param tokenAmount Amount of tokens to swap
+    /// @param minUSDCAmount Minimum expected USDC amount
     function swapTokenForUSDC(
         address tokenAddress,
         uint256 tokenAmount,
@@ -134,7 +134,7 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         LiquidityPool storage pool = liquidityPools[tokenAddress];
         require(pool.isActive, "Pool not active");
         
-        // Calcul du montant d'USDC à recevoir
+        // Calculate USDC amount to receive
         uint256 usdcAmount = getSwapAmount(
             tokenAmount,
             pool.tokenReserve,
@@ -142,21 +142,21 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         );
         require(usdcAmount >= minUSDCAmount, "Insufficient output amount");
         
-        // Transferts
+        // Transfers
         IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokenAmount);
         USDC.transfer(msg.sender, usdcAmount);
         
-        // Mise à jour du pool
+        // Update pool
         pool.tokenReserve += tokenAmount;
         pool.usdcReserve -= usdcAmount;
         
         emit TokenSwapped(tokenAddress, address(USDC), msg.sender, tokenAmount, usdcAmount);
     }
 
-    /// @notice Échange de l'USDC contre des tokens de royalties
-    /// @param tokenAddress Adresse du token à recevoir
-    /// @param usdcAmount Montant d'USDC à échanger
-    /// @param minTokenAmount Montant minimum de tokens attendu
+    /// @notice Swaps USDC for royalty tokens
+    /// @param tokenAddress Token address to receive
+    /// @param usdcAmount Amount of USDC to swap
+    /// @param minTokenAmount Minimum expected token amount
     function swapUSDCForToken(
         address tokenAddress,
         uint256 usdcAmount,
@@ -165,7 +165,7 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         LiquidityPool storage pool = liquidityPools[tokenAddress];
         require(pool.isActive, "Pool not active");
         
-        // Calcul du montant de tokens à recevoir
+        // Calculate token amount to receive
         uint256 tokenAmount = getSwapAmount(
             usdcAmount,
             pool.usdcReserve,
@@ -173,36 +173,36 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         );
         require(tokenAmount >= minTokenAmount, "Insufficient output amount");
         
-        // Transferts
+        // Transfers
         USDC.transferFrom(msg.sender, address(this), usdcAmount);
         IERC20(tokenAddress).transfer(msg.sender, tokenAmount);
         
-        // Mise à jour du pool
+        // Update pool
         pool.usdcReserve += usdcAmount;
         pool.tokenReserve -= tokenAmount;
         
         emit TokenSwapped(address(USDC), tokenAddress, msg.sender, usdcAmount, tokenAmount);
     }
 
-    /// @notice Échange direct entre deux tokens de royalties
-    /// @param fromToken Adresse du token à échanger
-    /// @param toToken Adresse du token à recevoir
-    /// @param fromAmount Montant de tokens à échanger
-    /// @param minToAmount Montant minimum de tokens attendu
+    /// @notice Direct swap between two royalty tokens
+    /// @param fromToken Address of token to swap from
+    /// @param toToken Address of token to receive
+    /// @param fromAmount Amount of tokens to swap
+    /// @param minToAmount Minimum expected token amount
     function swapTokenForToken(
         address fromToken,
         address toToken,
         uint256 fromAmount,
         uint256 minToAmount
     ) external nonReentrant {
-        // Premier swap vers USDC
+        // First swap to USDC
         uint256 usdcAmount = getSwapAmount(
             fromAmount,
             liquidityPools[fromToken].tokenReserve,
             liquidityPools[fromToken].usdcReserve
         );
         
-        // Second swap d'USDC vers le token cible
+        // Second swap from USDC to target token
         uint256 toAmount = getSwapAmount(
             usdcAmount,
             liquidityPools[toToken].usdcReserve,
@@ -211,20 +211,20 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         
         require(toAmount >= minToAmount, "Insufficient output amount");
         
-        // Exécution des transferts
+        // Execute transfers
         IERC20(fromToken).transferFrom(msg.sender, address(this), fromAmount);
         IERC20(toToken).transfer(msg.sender, toAmount);
         
-        // Mise à jour des pools
+        // Update pools
         liquidityPools[fromToken].tokenReserve += fromAmount;
         liquidityPools[toToken].tokenReserve -= toAmount;
         
         emit TokenSwapped(fromToken, toToken, msg.sender, fromAmount, toAmount);
     }
 
-    /// @notice Obtient le prix actuel d'un token en USDC
-    /// @param tokenAddress Adresse du token
-    /// @return Prix du token en USDC (multiplié par 1e18 pour la précision)
+    /// @notice Gets the current price of a token in USDC
+    /// @param tokenAddress Token address
+    /// @return Token price in USDC (multiplied by 1e18 for precision)
     function getTokenPrice(address tokenAddress) external view returns (uint256) {
         LiquidityPool memory pool = liquidityPools[tokenAddress];
         require(pool.isActive && pool.tokenReserve > 0, "Invalid pool");

@@ -22,30 +22,30 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
         uint256 totalRoyalties;
     }
 
-    // Variables d'état
+    // State variables
     RoyaltyInfo public royaltyInfo;
-    uint256 public constant PLATFORM_FEE = 300; // 3% en base points
-    uint256 public tokenPrice;                  // Prix du token en USDC
-    IERC20 public usdcToken;                   // Référence au contrat USDC
-    bool public isListedForSale;               // État de mise en vente des tokens
+    uint256 public constant PLATFORM_FEE = 300; // 3% in basis points
+    uint256 public tokenPrice;                  // Token price in USDC
+    IERC20 public usdcToken;                   // Reference to USDC contract
+    bool public isListedForSale;               // Token sale status
     
-    // Mapping pour suivre les dernières réclamations de royalties
+    // Mapping to track last royalty claims
     mapping(address => uint256) public lastClaimTime;
 
-    // Événements
+    // Events
     event RoyaltyReceived(uint256 amount, uint256 platformFee);
     event RoyaltyClaimed(address indexed holder, uint256 amount);
     event TokensListed(uint256 price);
     event TokensPurchased(address indexed buyer, uint256 amount, uint256 price);
 
-    /// @notice Constructeur du contrat
-    /// @dev Initialise le token avec ses paramètres de base
-    /// @param name Nom du token
-    /// @param symbol Symbole du token
-    /// @param _royaltyPercentage Pourcentage des royalties (en base points)
-    /// @param _duration Durée de validité des droits en secondes
-    /// @param _tokenPrice Prix initial du token en USDC
-    /// @param _usdcAddress Adresse du contrat USDC
+    /// @notice Contract constructor
+    /// @dev Initializes the token with its base parameters
+    /// @param name Token name
+    /// @param symbol Token symbol
+    /// @param _royaltyPercentage Royalty percentage (in basis points)
+    /// @param _duration Rights validity duration in seconds
+    /// @param _tokenPrice Initial token price in USDC
+    /// @param _usdcAddress USDC contract address
     constructor(
         string memory name,
         string memory symbol,
@@ -61,35 +61,35 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
         _mint(msg.sender, 1_000_000_000 * 10**decimals()); // 1 milliard de tokens
     }
 
-    /// @notice Distribue les royalties reçues
-    /// @dev Prélève les frais de plateforme et met à jour le montant total des royalties
-    /// @param amount Montant des royalties à distribuer
+    /// @notice Distribute received royalties
+    /// @dev Deduct platform fees and update total royalties
+    /// @param amount Amount of royalties to distribute
     function distributeRoyalties(uint256 amount) external nonReentrant {
         require(block.timestamp < royaltyInfo.expirationDate, "Royalty period expired");
         
-        // Calcul des frais de plateforme
+        // Calculate platform fees
         uint256 platformFeeAmount = (amount * PLATFORM_FEE) / 10000;
         uint256 netAmount = amount - platformFeeAmount;
         
-        // Mise à jour des royalties totales
+        // Update total royalties
         royaltyInfo.totalRoyalties += netAmount;
         emit RoyaltyReceived(amount, platformFeeAmount);
         
-        // Transfert des frais à la plateforme
+        // Transfer fees to the platform
         (bool success, ) = payable(owner()).call{value: platformFeeAmount}("");
         require(success, "Platform fee transfer failed");
     }
 
-    /// @notice Permet aux détenteurs de réclamer leurs royalties
-    /// @dev Calcule et transfère la part de royalties en fonction des tokens détenus
+    /// @notice Allow holders to claim their royalties
+    /// @dev Calculate and transfer royalty share based on owned tokens
     function claimRoyalties() external nonReentrant {
         require(balanceOf(msg.sender) > 0, "No tokens owned");
         require(royaltyInfo.totalRoyalties > 0, "No royalties to claim");
         
-        // Modification du calcul pour éviter la perte de précision
+        // Modify calculation to avoid precision loss
         uint256 userBalance = balanceOf(msg.sender);
         uint256 supply = totalSupply();
-        // Calculer d'abord le pourcentage puis multiplier par le montant total
+        // Calculate percentage first, then multiply by total royalties
         uint256 share = (userBalance * 1e18 / supply) * royaltyInfo.totalRoyalties / 1e18;
         require(share > 0, "Share too small");
         
@@ -102,9 +102,9 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
         emit RoyaltyClaimed(msg.sender, share);
     }
 
-    /// @notice Liste les tokens pour la vente
-    /// @dev Uniquement appelable par le propriétaire
-    /// @param _price Prix de vente en USDC
+    /// @notice List tokens for sale
+    /// @dev Only callable by the owner
+    /// @param _price Sale price in USDC
     function listTokensForSale(uint256 _price) external onlyOwner {
         require(_price > 0, "Price must be greater than 0");
         tokenPrice = _price;
@@ -112,9 +112,9 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
         emit TokensListed(_price);
     }
 
-    /// @notice Permet l'achat de tokens
-    /// @dev Transfère les USDC au vendeur et les tokens à l'acheteur
-    /// @param amount Nombre de tokens à acheter
+    /// @notice Allow purchase of tokens
+    /// @dev Transfer USDC to seller and tokens to buyer
+    /// @param amount Number of tokens to purchase
     function purchaseTokens(uint256 amount) external nonReentrant {
         require(isListedForSale, "Tokens not listed for sale");
         require(amount > 0, "Amount must be greater than 0");
@@ -122,11 +122,11 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
         uint256 cost = amount * tokenPrice;
         require(cost > 0, "Invalid cost calculation");
         
-        // Vérifier le solde USDC de l'acheteur
+        // Verify buyer's USDC balance
         uint256 buyerBalance = usdcToken.balanceOf(msg.sender);
         require(buyerBalance >= cost, "Insufficient USDC balance");
         
-        // Vérifier l'allowance USDC
+        // Verify USDC allowance
         uint256 allowance = usdcToken.allowance(msg.sender, address(this));
         require(allowance >= cost, "Insufficient USDC allowance");
         
@@ -136,13 +136,13 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
         emit TokensPurchased(msg.sender, amount, cost);
     }
 
-    /// @notice Vérifie si la période de royalties est toujours active
-    /// @return bool Indique si la période est active
+    /// @notice Check if royalty period is still active
+    /// @return bool Indicates if the period is active
     function isRoyaltyPeriodActive() public view returns (bool) {
         return block.timestamp < royaltyInfo.expirationDate;
     }
 
     receive() external payable {
-        // Permet au contrat de recevoir de l'ETH
+        // Allow contract to receive ETH
     }
 }

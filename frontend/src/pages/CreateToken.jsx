@@ -59,8 +59,8 @@ const CreateToken = () => {
         formData.symbol,
         parseUnits(formData.royaltyPercentage, 2),
         BigInt(Number(formData.duration) * 24 * 60 * 60),
-        parseUnits(formData.tokenPrice, 6),
-        CONTRACTS.USDC.address
+        parseUnits(formData.tokenPrice, 18),
+        CONTRACTS.DAI.address
       ];
 
       createToken({
@@ -203,7 +203,7 @@ const CreateToken = () => {
                     </div>
 
                     <div>
-                      <Label className="create-token-label">Token Price (USDC)</Label>
+                      <Label className="create-token-label">Token Price (DAI)</Label>
                       <div className="flex gap-2 items-center">
                         <Input
                           type="number"
@@ -213,7 +213,6 @@ const CreateToken = () => {
                           value={formData.tokenPrice}
                           onChange={(e) => {
                             const value = e.target.value;
-                            // Vérifier si la valeur a plus de 4 décimales
                             if (value.includes('.') && value.split('.')[1].length > 4) {
                               return;
                             }
@@ -222,7 +221,7 @@ const CreateToken = () => {
                           className="create-token-input"
                           required
                         />
-                        <span className="text-gray-400">USDC</span>
+                        <span className="text-gray-400">DAI</span>
                       </div>
                     </div>
                   </div>

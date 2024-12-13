@@ -5,22 +5,22 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title MockUSDC
-/// @notice Contrat de simulation USDC pour les tests
-/// @dev Hérite d'ERC20 et permet le mint pour les tests
+/// @notice USDC simulation contract for testing
+/// @dev Inherits from ERC20 and allows minting for tests
 contract MockUSDC is ERC20, Ownable {
     constructor() ERC20("USD Coin", "USDC") Ownable(msg.sender) {
-        // Mint 1 milliard de tokens au déploiement (avec 18 décimales)
+        // Mint 1 billion tokens on deployment (with 18 decimals)
         _mint(msg.sender, 1_000_000_000 * 10**decimals());
     }
 
-    /// @notice Permet de créer des tokens pour les tests
-    /// @param to Adresse recevant les tokens
-    /// @param amount Montant à créer
+    /// @notice Allows creating tokens for testing
+    /// @param to Address receiving the tokens
+    /// @param amount Amount to create
     function mint(address to, uint256 amount) external onlyOwner {
         _mint(to, amount);
     }
 
-    /// @notice Override decimals pour matcher USDC
+    /// @notice Override decimals to match USDC
     function decimals() public pure override returns (uint8) {
         return 6;
     }

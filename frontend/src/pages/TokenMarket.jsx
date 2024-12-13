@@ -12,7 +12,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 
 const TokenMarket = () => {
-  // États et hooks principaux pour la gestion du marché des tokens
+  // Main states and hooks for token market management
   const { isConnected, address } = useAccount();
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
@@ -23,16 +23,16 @@ const TokenMarket = () => {
   const config = useConfig(); 
   const { writeContract } = useWriteContract();
 
-  // Vérifie la disponibilité de l'ABI au chargement
+  // Check ABI availability on load
   useEffect(() => {
     if (!CONTRACTS?.RoyaltyToken?.abi) {
-      console.error('ABI non disponible pour PumpMusicRoyaltyToken');
+      console.error('ABI not available for PumpMusicRoyaltyToken');
     }
   }, []);
 
   const { data: approveSimulation } = useSimulateContract({
-    address: CONTRACTS.USDC.address,
-    abi: CONTRACTS.USDC.abi,
+    address: CONTRACTS.DAI.address,
+    abi: CONTRACTS.DAI.abi,
     functionName: 'approve',
     args: [selectedToken?.address ?? '0x', 0n], // Default values until actual execution
   });
@@ -152,7 +152,7 @@ const TokenMarket = () => {
       if (!royaltyInfo) return "Not available";
       const timestamp = Number(royaltyInfo[0]);
       if (isNaN(timestamp)) return "Not available";
-      return new Date(timestamp * 1000).toLocaleDateString('fr-FR', {
+      return new Date(timestamp * 1000).toLocaleDateString('en-US', {
         day: '2-digit',
         month: 'short',
         year: 'numeric'
@@ -187,7 +187,7 @@ const TokenMarket = () => {
             <div className="token-card-row">
               <span className="token-detail-label">Price</span>
               <span id={`token-price-${tokenAddress}`} className="token-detail-value">
-                {currentTokenPrice ? `${(Number(currentTokenPrice) / 1000000).toFixed(6)} USDC` : "Not available"}
+                {currentTokenPrice ? `${(Number(currentTokenPrice) / 1e18).toFixed(8)} DAI` : "Not available"}
               </span>
             </div>
             <div className="token-card-row">
@@ -251,35 +251,27 @@ const TokenMarket = () => {
     try {
       setIsPurchasing(true);
       
-      // Conversion du montant en BigInt avec 18 décimales
       const tokenAmount = parseUnits(purchaseAmount, 18);
-      
-      // Prix en USDC (6 décimales)
       const pricePerToken = BigInt(selectedToken.price);
+      const costInDAI = tokenAmount * pricePerToken / BigInt(10n ** 18n);
       
-      // Calcul ajusté du coût total
-      const costInUSDC = (tokenAmount * pricePerToken) / BigInt(10n ** 18n);
-      
-      // Vérification de l'allowance USDC
       const currentAllowance = await readContract(config, {
-        address: CONTRACTS.USDC.address,
-        abi: CONTRACTS.USDC.abi,
+        address: CONTRACTS.DAI.address,
+        abi: CONTRACTS.DAI.abi,
         functionName: 'allowance',
         args: [address, selectedToken.address],
       });
 
-      // Approbation si nécessaire
-      if (currentAllowance < costInUSDC) {
+      if (currentAllowance < costInDAI) {
         const approveHash = await writeContract({
-          address: CONTRACTS.USDC.address,
-          abi: CONTRACTS.USDC.abi,
+          address: CONTRACTS.DAI.address,
+          abi: CONTRACTS.DAI.abi,
           functionName: 'approve',
-          args: [selectedToken.address, costInUSDC],
+          args: [selectedToken.address, costInDAI],
         });
         await waitForTransactionReceipt(config, { hash: approveHash });
       }
 
-      // Achat des tokens avec le montant exact
       const purchaseHash = await writeContract({
         address: selectedToken.address,
         abi: CONTRACTS.RoyaltyToken.abi,
@@ -293,8 +285,8 @@ const TokenMarket = () => {
       setPurchaseAmount('');
       
     } catch (error) {
-      console.error('Erreur lors de l\'achat:', error);
-      alert(`Échec de l'achat: ${error.message}`);
+      console.error('Error during purchase:', error);
+      alert(`Purchase failed: ${error.message}`);
     } finally {
       setIsPurchasing(false);
     }
@@ -399,8 +391,8 @@ const TokenMarket = () => {
             />
             <div className="mt-2 text-sm text-gray-500">
               Total cost: {purchaseAmount && selectedToken?.price 
-                ? `${(Number(purchaseAmount) * Number(selectedToken.price) / 10**6).toFixed(6)} USDC` 
-                : '0 USDC'}
+                ? `${(Number(purchaseAmount) * Number(selectedToken.price) / 10**18).toFixed(8)} DAI` 
+                : '0 DAI'}
             </div>
           </div>
 

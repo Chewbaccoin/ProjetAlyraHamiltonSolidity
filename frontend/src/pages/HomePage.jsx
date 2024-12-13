@@ -32,7 +32,7 @@ const HomePage = () => {
     },
     {
       title: "Swap Tokens",
-      description: "Easily swap between different artist tokens or convert to USDC.",
+      description: "Easily exchange between different artist tokens or convert to DAI.",
       icon: <RefreshCw className="w-6 h-6 text-purple-400" />,
       path: '/swap'
     },

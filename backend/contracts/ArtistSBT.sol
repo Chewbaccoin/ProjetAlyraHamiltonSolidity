@@ -20,9 +20,9 @@ contract ArtistSBT is ERC721Upgradeable, OwnableUpgradeable {
         __Ownable_init(msg.sender);
     }
 
-    /// @notice Attribue un SBT à un nouvel artiste pour le vérifier
-    /// @dev Seul le propriétaire du contrat peut vérifier les artistes
-    /// @param artist L'adresse de l'artiste à vérifier
+    /// @notice Assigns an SBT to a new artist for verification
+    /// @dev Only the contract owner can verify artists
+    /// @param artist The address of the artist to verify
     function verifyArtist(address artist) external onlyOwner {
         require(!isArtist(artist), "Artist already verified");
         uint256 tokenId = _tokenIdCounter++;
@@ -30,9 +30,9 @@ contract ArtistSBT is ERC721Upgradeable, OwnableUpgradeable {
         emit ArtistVerified(artist, tokenId);
     }
 
-    /// @notice Révoque le statut d'artiste vérifié
-    /// @dev Brûle le SBT de l'artiste, supprimant ainsi sa vérification
-    /// @param artist L'adresse de l'artiste dont la vérification doit être révoquée
+    /// @notice Revokes the verified artist status
+    /// @dev Burns the artist's SBT, removing their verification
+    /// @param artist The address of the artist whose verification should be revoked
     function revokeVerification(address artist) external onlyOwner {
         require(isArtist(artist), "Not a verified artist");
         uint256 tokenId = tokenOfOwner(artist);
@@ -40,18 +40,18 @@ contract ArtistSBT is ERC721Upgradeable, OwnableUpgradeable {
         emit VerificationRevoked(artist, tokenId);
     }
 
-    /// @notice Vérifie si une adresse appartient à un artiste vérifié
-    /// @dev Un artiste est vérifié s'il possède un SBT (balance > 0)
-    /// @param account L'adresse à vérifier
-    /// @return bool True si l'adresse appartient à un artiste vérifié
+    /// @notice Checks if an address belongs to a verified artist
+    /// @dev An artist is verified if they own an SBT (balance > 0)
+    /// @param account The address to check
+    /// @return bool True if the address belongs to a verified artist
     function isArtist(address account) public view returns (bool) {
         return balanceOf(account) > 0;
     }
 
-    /// @notice Trouve le tokenId associé à un artiste
-    /// @dev Parcourt tous les tokens pour trouver celui de l'artiste
-    /// @param owner L'adresse de l'artiste
-    /// @return uint256 L'ID du token de l'artiste
+    /// @notice Finds the tokenId associated with an artist
+    /// @dev Iterates through all tokens to find the artist's token
+    /// @param owner The artist's address
+    /// @return uint256 The artist's token ID
     function tokenOfOwner(address owner) public view returns (uint256) {
         require(isArtist(owner), "Not a verified artist");
         for (uint256 i = 0; i < _tokenIdCounter; i++) {
@@ -66,12 +66,12 @@ contract ArtistSBT is ERC721Upgradeable, OwnableUpgradeable {
         revert("Token not found");
     }
 
-    /// @notice Empêche le transfert des tokens entre adresses, rendant le token "Soulbound"
-    /// @dev Surcharge la fonction _update d'OpenZeppelin pour bloquer les transferts
-    /// @param to L'adresse de destination du transfert
-    /// @param tokenId L'identifiant du token concerné
-    /// @param auth L'adresse autorisée pour le transfert
-    /// @return address L'adresse du nouveau propriétaire (uniquement pour le mint et burn)
+    /// @notice Prevents token transfers between addresses, making it "Soulbound"
+    /// @dev Overrides OpenZeppelin's _update function to block transfers
+    /// @param to The destination address for the transfer
+    /// @param tokenId The ID of the token concerned
+    /// @param auth The authorized address for the transfer
+    /// @return address The address of the new owner (only for minting and burning)
     function _update(
         address to,
         uint256 tokenId,

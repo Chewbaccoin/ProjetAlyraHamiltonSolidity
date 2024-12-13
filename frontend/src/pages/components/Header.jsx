@@ -9,7 +9,7 @@ const Header = () => {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Évite les problèmes d'hydratation
+  // Avoid hydration issues
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -79,7 +79,7 @@ const Header = () => {
                             onClick={openConnectModal}
                             className="connect-button"
                           >
-                            Connecter
+                            Connect
                           </button>
                         );
                       }
