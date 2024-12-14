@@ -60,10 +60,10 @@ describe("PumpMusicRoyaltyToken", function () {
             expect(await royaltyToken.owner()).to.equal(artist.address);
         });
 
-        it("Should mint initial supply to artist", async function () {
-            const { royaltyToken, artist } = await loadFixture(deployTokenFixture);
+        it("Should mint initial supply to contract", async function () {
+            const { royaltyToken } = await loadFixture(deployTokenFixture);
             const initialSupply = ethers.parseEther("1000000000");
-            expect(await royaltyToken.balanceOf(artist.address)).to.equal(initialSupply);
+            expect(await royaltyToken.balanceOf(await royaltyToken.getAddress())).to.equal(initialSupply);
         });
 
         it("Should set correct royalty parameters", async function () {
@@ -94,7 +94,7 @@ describe("PumpMusicRoyaltyToken", function () {
             const { royaltyToken, mockDAI, artist, investor1, tokenPrice } = await loadFixture(deployTokenFixture);
             
             // Get initial balances
-            const artistInitialTokens = await royaltyToken.balanceOf(artist.address);
+            const contractInitialTokens = await royaltyToken.balanceOf(await royaltyToken.getAddress());
             const investorInitialTokens = await royaltyToken.balanceOf(investor1.address);
             const artistInitialDAI = await mockDAI.balanceOf(artist.address);
             const investorInitialDAI = await mockDAI.balanceOf(investor1.address);
@@ -114,8 +114,8 @@ describe("PumpMusicRoyaltyToken", function () {
             // Verify balances
             expect(await royaltyToken.balanceOf(investor1.address))
                 .to.equal(investorInitialTokens + purchaseAmount);
-            expect(await royaltyToken.balanceOf(artist.address))
-                .to.equal(artistInitialTokens - purchaseAmount);
+            expect(await royaltyToken.balanceOf(await royaltyToken.getAddress()))
+                .to.equal(contractInitialTokens - purchaseAmount);
             expect(await mockDAI.balanceOf(artist.address))
                 .to.equal(artistInitialDAI + cost);
             expect(await mockDAI.balanceOf(investor1.address))
@@ -125,11 +125,13 @@ describe("PumpMusicRoyaltyToken", function () {
 
     describe("Royalty Distribution", function () {
         it("Should distribute royalties correctly", async function () {
-            const { royaltyToken, artist, investor1 } = await loadFixture(deployTokenFixture);
+            const { royaltyToken, artist, investor1, mockDAI } = await loadFixture(deployTokenFixture);
     
-            // Transfer tokens to investor
-            const investorTokens = ethers.parseEther("1000");
-            await royaltyToken.connect(artist).transfer(investor1.address, investorTokens);
+            // First list and purchase tokens instead of direct transfer
+            const purchaseAmount = ethers.parseEther("1000");
+            await royaltyToken.connect(artist).listTokensForSale(ethers.parseEther("1"));
+            await mockDAI.connect(investor1).approve(await royaltyToken.getAddress(), purchaseAmount);
+            await royaltyToken.connect(investor1).purchaseTokens(purchaseAmount);
             
             // Fund the contract with ETH for platform fees
             await artist.sendTransaction({
@@ -155,8 +157,14 @@ describe("PumpMusicRoyaltyToken", function () {
         });
 
         it("Should allow claiming royalties", async function () {
-            const { royaltyToken, artist, investor1 } = await loadFixture(deployTokenFixture);
+            const { royaltyToken, artist, investor1, mockDAI } = await loadFixture(deployTokenFixture);
     
+            // First list and purchase tokens instead of direct transfer
+            const purchaseAmount = ethers.parseEther("1000");
+            await royaltyToken.connect(artist).listTokensForSale(ethers.parseEther("1"));
+            await mockDAI.connect(investor1).approve(await royaltyToken.getAddress(), purchaseAmount);
+            await royaltyToken.connect(investor1).purchaseTokens(purchaseAmount);
+            
             // Fund the contract with ETH for platform fees
             await artist.sendTransaction({
                 to: await royaltyToken.getAddress(),
@@ -164,7 +172,6 @@ describe("PumpMusicRoyaltyToken", function () {
             });
 
             // Setup initial state
-            await royaltyToken.connect(artist).transfer(investor1.address, ethers.parseEther("1000"));
             await royaltyToken.connect(artist).distributeRoyalties(ethers.parseEther("1"));
                         
             // Record balances and claim
@@ -190,6 +197,21 @@ describe("PumpMusicRoyaltyToken", function () {
                 royaltyToken.connect(artist).distributeRoyalties(ethers.parseEther("1"))
             ).to.be.revertedWithCustomError(royaltyToken, "RoyaltyPeriodExpired");
         });
+
+        it("Should prevent claiming when no royalties available", async function () {
+            const { royaltyToken, artist, investor1, mockDAI } = await loadFixture(deployTokenFixture);
+            
+            // First list and purchase tokens to give investor1 some tokens
+            const purchaseAmount = ethers.parseEther("1000");
+            await royaltyToken.connect(artist).listTokensForSale(ethers.parseEther("1"));
+            await mockDAI.connect(investor1).approve(await royaltyToken.getAddress(), purchaseAmount);
+            await royaltyToken.connect(investor1).purchaseTokens(purchaseAmount);
+            
+            // Try to claim without any royalties distributed - should fail
+            await expect(
+                royaltyToken.connect(investor1).claimRoyalties()
+            ).to.be.revertedWithCustomError(royaltyToken, "NoRoyaltiesToClaim");
+        });
     });
 
     describe("Edge Cases and Security", function () {
@@ -201,9 +223,15 @@ describe("PumpMusicRoyaltyToken", function () {
         });
 
         it("Should prevent claiming when no royalties available", async function () {
-            const { royaltyToken, artist, investor1 } = await loadFixture(deployTokenFixture);
-            await royaltyToken.connect(artist).transfer(investor1.address, ethers.parseEther("1000"));
+            const { royaltyToken, artist, investor1, mockDAI } = await loadFixture(deployTokenFixture);
             
+            // First list and purchase tokens to give investor1 some tokens
+            const purchaseAmount = ethers.parseEther("1000");
+            await royaltyToken.connect(artist).listTokensForSale(ethers.parseEther("1"));
+            await mockDAI.connect(investor1).approve(await royaltyToken.getAddress(), purchaseAmount);
+            await royaltyToken.connect(investor1).purchaseTokens(purchaseAmount);
+            
+            // Try to claim without any royalties distributed - should fail
             await expect(
                 royaltyToken.connect(investor1).claimRoyalties()
             ).to.be.revertedWithCustomError(royaltyToken, "NoRoyaltiesToClaim");

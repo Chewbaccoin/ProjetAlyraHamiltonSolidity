@@ -2,7 +2,7 @@
 export const CONTRACTS = {
     ArtistSBT: {
       //address: "ARTIST_SBT_ADDRESS",
-      address: "0xe7DfA6f8e3c73152625c2Bcbb1b71481142e26dF",
+      address: "0x5fd7Fa8178906A64A616ce45555b7A045F728bA5",
       abi: [
         {
           "inputs": [],
@@ -693,7 +693,7 @@ export const CONTRACTS = {
     },
     TokenFactory: {
       //address: "TOKEN_FACTORY_ADDRESS",
-      address: "0xBf30BA96093B5c26E3daa15b4964177245E9011e",
+      address: "0x522a4593F07554215748727d998545EF87ef7808",
       abi: [
         {
           "inputs": [
@@ -1034,6 +1034,36 @@ export const CONTRACTS = {
           "type": "error"
         },
         {
+          "inputs": [],
+          "name": "InsufficientAllowance",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "InsufficientBalance",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "InvalidAmount",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "InvalidPrice",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "NoRoyaltiesToClaim",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "NoTokensOwned",
+          "type": "error"
+        },
+        {
           "inputs": [
             {
               "internalType": "address",
@@ -1058,6 +1088,26 @@ export const CONTRACTS = {
         {
           "inputs": [],
           "name": "ReentrancyGuardReentrantCall",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "RoyaltyPeriodExpired",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "ShareTooSmall",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "TokensNotListed",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "TransferFailed",
           "type": "error"
         },
         {
@@ -1571,7 +1621,7 @@ export const CONTRACTS = {
     },
     DAI: {
       //address: "DAI_ADDRESS",
-      address: "0x257c03447818B2Be1BD414628C88FfF4C6178ccE",
+      address: "0x89f765a668d7A727D3bf034FFE294D3D1605ea64",
       abi: [
         {
           "inputs": [],
@@ -1983,7 +2033,7 @@ export const CONTRACTS = {
     },
     USDC: {
       //address: "USDC_ADDRESS",
-      address: "0x84767A213B6c13B8C0b57E742AeB4fd8A3f81Ff2",
+      address: "0xEaEA67Bdb65529e05d2a0a9b12201b7EBeb0dB5f",
       abi:  [
         {
           "inputs": [],

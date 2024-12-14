@@ -230,7 +230,7 @@ const Admin = () => {
                         placeholder="Enter artist's wallet address"
                         value={artistAddress}
                         onChange={handleAddressChange}
-                        className={!isValidAddress ? 'border-red-500' : ''}
+                        className={`bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${!isValidAddress ? 'border-red-500' : ''}`}
                       />
                       {!isValidAddress && (
                         <p className="text-red-500 text-sm mt-1">Please enter a valid Ethereum address</p>

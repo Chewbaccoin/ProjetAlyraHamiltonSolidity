@@ -70,7 +70,7 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
         royaltyInfo.expirationDate = block.timestamp + _duration;
         tokenPrice = _tokenPrice;
         daiToken = IERC20(_daiAddress);
-        _mint(msg.sender, 1_000_000_000 * 10**decimals()); // 1 milliard de tokens
+        _mint(address(this), 1_000_000_000 * 10**decimals());
     }
 
     /// @notice Distribute received royalties
@@ -145,7 +145,8 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
         
         require(daiToken.transferFrom(msg.sender, owner(), cost), "DAI transfer failed");
         
-        _transfer(owner(), msg.sender, amount);
+        // Transfer tokens from the contract's balance instead of the owner's
+        _transfer(address(this), msg.sender, amount);
         emit TokensPurchased(msg.sender, amount, cost);
     }
 
