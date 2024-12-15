@@ -40,6 +40,7 @@ const CreateToken = () => {
 
   const [isCreating, setIsCreating] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (isConfirmed) {
@@ -51,9 +52,17 @@ const CreateToken = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSuccess(false);
+    setError(null);
     
     try {
       setIsCreating(true);
+      
+      // Validate inputs before proceeding
+      if (!formData.name || !formData.symbol || !formData.royaltyPercentage || 
+          !formData.duration || !formData.tokenPrice) {
+        throw new Error("Please fill all fields");
+      }
+
       const args = [
         formData.name,
         formData.symbol,
@@ -63,14 +72,17 @@ const CreateToken = () => {
         CONTRACTS.DAI.address
       ];
 
-      createToken({
+      await createToken({
         address: CONTRACTS.TokenFactory.address,
         abi: CONTRACTS.TokenFactory.abi,
         functionName: 'createToken',
         args
       });
+
     } catch (err) {
       console.error(err);
+      // Add error state and display to user
+      setError(err.message);
       setIsCreating(false);
     }
   };
@@ -182,7 +194,12 @@ const CreateToken = () => {
                           max="100"
                           placeholder="0.01"
                           value={formData.royaltyPercentage}
-                          onChange={(e) => setFormData({...formData, royaltyPercentage: e.target.value})}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value >= 0 && value <= 100) {
+                              setFormData({...formData, royaltyPercentage: value});
+                            }
+                          }}
                           className="create-token-input"
                           required
                         />

@@ -2,7 +2,7 @@
 export const CONTRACTS = {
     ArtistSBT: {
       //address: "ARTIST_SBT_ADDRESS",
-      address: "0x5fd7Fa8178906A64A616ce45555b7A045F728bA5",
+      address: "0x1d2B53e943Df6A92F361dE865a714d9c4bd84D53",
       abi: [
         {
           "inputs": [],
@@ -693,7 +693,7 @@ export const CONTRACTS = {
     },
     TokenFactory: {
       //address: "TOKEN_FACTORY_ADDRESS",
-      address: "0x522a4593F07554215748727d998545EF87ef7808",
+      address: "0xf8b341Bc958a4cD2de25Fa2AAbe4D01b71Ee5A9b",
       abi: [
         {
           "inputs": [
@@ -1114,6 +1114,19 @@ export const CONTRACTS = {
           "anonymous": false,
           "inputs": [
             {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "newAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "AmountRaised",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
               "indexed": true,
               "internalType": "address",
               "name": "owner",
@@ -1383,6 +1396,32 @@ export const CONTRACTS = {
         },
         {
           "inputs": [],
+          "name": "getRoyaltiesReceived",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "getTotalAmountRaised",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
           "name": "isListedForSale",
           "outputs": [
             {
@@ -1536,6 +1575,19 @@ export const CONTRACTS = {
         },
         {
           "inputs": [],
+          "name": "totalHolders",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
           "name": "totalSupply",
           "outputs": [
             {
@@ -1621,7 +1673,7 @@ export const CONTRACTS = {
     },
     DAI: {
       //address: "DAI_ADDRESS",
-      address: "0x89f765a668d7A727D3bf034FFE294D3D1605ea64",
+      address: "0x9113Cab668a3119a2E06380C28229d8feb67c678",
       abi: [
         {
           "inputs": [],
@@ -2033,7 +2085,7 @@ export const CONTRACTS = {
     },
     USDC: {
       //address: "USDC_ADDRESS",
-      address: "0xEaEA67Bdb65529e05d2a0a9b12201b7EBeb0dB5f",
+      address: "0x72E39BF7D83Cc079b2763dcAFAF6E92cafAf3462",
       abi:  [
         {
           "inputs": [],

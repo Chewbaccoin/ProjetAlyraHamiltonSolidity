@@ -1,7 +1,7 @@
 // src/components/TokenManagement.jsx
 import React, { useState, useEffect } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
-import { parseUnits } from 'viem';
+import { parseUnits, parseEther } from 'viem';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/Dialog';
@@ -47,11 +47,15 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
 
   const handleDistributeRoyalties = () => {
     if (!royaltyAmount) return;
+    
+    const amountInWei = parseEther(royaltyAmount);
+    
     distributeRoyalties({
       address: tokenAddress,
       abi: CONTRACTS.RoyaltyToken.abi,
       functionName: 'distributeRoyalties',
-      args: [parseUnits(royaltyAmount, 18)]
+      args: [amountInWei],
+      value: amountInWei
     });
   };
 
@@ -66,7 +70,6 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
   };
 
   useEffect(() => {
-    console.log('isListedData:', isListedData);
     setIsListed(Boolean(isListedData));
   }, [isListedData]);
 
@@ -93,8 +96,12 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
                 value={newPrice}
                 onChange={(e) => setNewPrice(e.target.value)}
                 className="flex-1"
+                disabled={isListed}
               />
-              <Button onClick={handleUpdatePrice} disabled={!newPrice || isUpdating}>
+              <Button 
+                onClick={handleUpdatePrice} 
+                disabled={!newPrice || isUpdating || isListed}
+              >
                 {isUpdating ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
@@ -102,6 +109,11 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
                 )}
               </Button>
             </div>
+            {isListed && (
+              <p className="text-xs text-red-500">
+                Price cannot be updated once token is listed for sale
+              </p>
+            )}
           </div>
 
           {/* Royalties distribution section */}

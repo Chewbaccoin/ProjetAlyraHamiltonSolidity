@@ -37,6 +37,7 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
     event RoyaltyClaimed(address indexed holder, uint256 amount);
     event TokensListed(uint256 price);
     event TokensPurchased(address indexed buyer, uint256 amount, uint256 price);
+    event AmountRaised(uint256 newAmount);
 
     // Errors
     error RoyaltyPeriodExpired();
@@ -49,6 +50,23 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
     error InvalidAmount();
     error InsufficientBalance();
     error InsufficientAllowance();
+
+    /// @notice Track the number of token holders
+    mapping(address => bool) private isHolder;
+    uint256 private numberOfHolders;
+
+    /// @notice Track total royalties received
+    uint256 private totalRoyaltiesReceived;
+
+    /// @notice Get the total amount raised from token sales in DAI (in DAI, 18 decimals)
+    uint256 private totalAmountRaised;  // Total amount of DAI raised from token sales
+
+    /// @notice Track user investments
+    mapping(address => uint256) public userInvestments;
+    uint256 public totalInvestments;
+
+    /// @notice Track total royalties claimed by each address
+    mapping(address => uint256) private totalRoyaltiesClaimed;
 
     /// @notice Contract constructor
     /// @dev Initializes the token with its base parameters
@@ -76,15 +94,20 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
     /// @notice Distribute received royalties
     /// @dev Deduct platform fees and update total royalties
     /// @param amount Amount of royalties to distribute
-    function distributeRoyalties(uint256 amount) external nonReentrant {
+    function distributeRoyalties(uint256 amount) external payable nonReentrant {
         if (block.timestamp >= royaltyInfo.expirationDate) revert RoyaltyPeriodExpired();
+        
+        // Verify that the sent ETH matches the amount parameter
+        require(msg.value == amount, "Sent ETH must match amount");
         
         // Calculate platform fees
         uint256 platformFeeAmount = (amount * PLATFORM_FEE) / 10000;
         uint256 netAmount = amount - platformFeeAmount;
         
-        // Update total royalties
+        // Update total royalties and royalties received
         royaltyInfo.totalRoyalties += netAmount;
+        totalRoyaltiesReceived += amount;
+        
         emit RoyaltyReceived(amount, platformFeeAmount);
         
         // Transfer fees to the platform
@@ -95,18 +118,19 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
     /// @notice Allow holders to claim their royalties
     /// @dev Calculate and transfer royalty share based on owned tokens
     function claimRoyalties() external nonReentrant {
-        if (balanceOf(msg.sender) == 0) revert NoTokensOwned();
+        if (userInvestments[msg.sender] == 0) revert NoTokensOwned();
         if (royaltyInfo.totalRoyalties == 0) revert NoRoyaltiesToClaim();
         
-        // Modify calculation to avoid precision loss
-        uint256 userBalance = balanceOf(msg.sender);
-        uint256 supply = totalSupply();
-        // Calculate percentage first, then multiply by total royalties
-        uint256 share = (userBalance * 1e18 / supply) * royaltyInfo.totalRoyalties / 1e18;
+        // Calculate share based on investment proportion
+        uint256 userInvestment = userInvestments[msg.sender];
+        // Multiply first to avoid precision loss
+        uint256 share = (userInvestment * royaltyInfo.totalRoyalties) / totalInvestments;
         if (share == 0) revert ShareTooSmall();
         
         royaltyInfo.totalRoyalties -= share;
         lastClaimTime[msg.sender] = block.timestamp;
+        
+        totalRoyaltiesClaimed[msg.sender] += share;
         
         (bool success, ) = payable(msg.sender).call{value: share}("");
         require(success, "Transfer failed");
@@ -145,6 +169,14 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
         
         require(daiToken.transferFrom(msg.sender, owner(), cost), "DAI transfer failed");
         
+        // Track user's investment
+        userInvestments[msg.sender] += cost;
+        totalInvestments += cost;
+        
+        // Update total amount raised
+        totalAmountRaised += cost;
+        emit AmountRaised(totalAmountRaised);
+        
         // Transfer tokens from the contract's balance instead of the owner's
         _transfer(address(this), msg.sender, amount);
         emit TokensPurchased(msg.sender, amount, cost);
@@ -156,7 +188,59 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
         return block.timestamp < royaltyInfo.expirationDate;
     }
 
+    /// @notice Get the total number of token holders
+    /// @return uint256 Number of unique addresses holding tokens
+    function totalHolders() public view returns (uint256) {
+        return numberOfHolders;
+    }
+
+    /// @notice Get the total royalties received since contract deployment
+    /// @return uint256 Total royalties received in wei
+    function getRoyaltiesReceived() public view returns (uint256) {
+        return totalRoyaltiesReceived;
+    }
+
+    /// @notice Get the total amount raised from token sales in DAI
+    /// @return uint256 Total amount raised in DAI (18 decimals)
+    function getTotalAmountRaised() public view returns (uint256) {
+        return totalAmountRaised;
+    }
+
     receive() external payable {
         // Allow contract to receive ETH
+    }
+
+    /// @notice Override the transfer function to track holders
+    /// @dev Updates holder count when tokens are transferred
+    /// @param from Address sending tokens
+    /// @param to Address receiving tokens
+    /// @param amount Amount of tokens being transferred
+    function _update(address from, address to, uint256 amount) internal virtual override {
+        // Get balances before transfer
+        uint256 fromBalanceBeforeTransfer = from != address(0) ? balanceOf(from) : 0;
+        uint256 toBalanceBeforeTransfer = to != address(0) ? balanceOf(to) : 0;
+        
+        super._update(from, to, amount);
+        
+        // Update holder tracking for sender
+        if (from != address(0) && fromBalanceBeforeTransfer >= amount && 
+            fromBalanceBeforeTransfer - amount == 0 && isHolder[from]) {
+            isHolder[from] = false;
+            numberOfHolders--;
+        }
+        
+        // Update holder tracking for receiver
+        if (to != address(0) && to != address(this) && 
+            toBalanceBeforeTransfer == 0 && !isHolder[to]) {
+            isHolder[to] = true;
+            numberOfHolders++;
+        }
+    }
+
+    /// @notice Get the total amount of royalties claimed by an address
+    /// @param investor Address of the investor
+    /// @return uint256 Total amount of royalties claimed in wei
+    function getTotalRoyaltiesClaimed(address investor) public view returns (uint256) {
+        return totalRoyaltiesClaimed[investor];
     }
 }
