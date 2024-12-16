@@ -114,6 +114,7 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
     ) external nonReentrant {
         LiquidityPool storage pool = liquidityPools[tokenAddress];
         require(pool.isActive, "Pool not active");
+        require(tokenAmount <= pool.tokenReserve, "Insufficient liquidity");
         
         // Calculate USDC amount to receive
         uint256 usdcAmount = getSwapAmount(
@@ -122,6 +123,7 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
             pool.usdcReserve
         );
         require(usdcAmount >= minUSDCAmount, "Insufficient output amount");
+        require(usdcAmount <= pool.usdcReserve, "Insufficient liquidity");
         
         // Transfers
         IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokenAmount);
@@ -153,6 +155,7 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
             pool.tokenReserve
         );
         require(tokenAmount >= minTokenAmount, "Insufficient output amount");
+        require(tokenAmount <= pool.tokenReserve, "Insufficient liquidity");
         
         // Transfers
         USDC.transferFrom(msg.sender, address(this), usdcAmount);
@@ -176,29 +179,35 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         uint256 fromAmount,
         uint256 minToAmount
     ) external nonReentrant {
+        LiquidityPool storage fromPool = liquidityPools[fromToken];
+        LiquidityPool storage toPool = liquidityPools[toToken];
+        
+        require(fromPool.isActive && toPool.isActive, "Pool not active");
+
         // First swap to USDC
         uint256 usdcAmount = getSwapAmount(
             fromAmount,
-            liquidityPools[fromToken].tokenReserve,
-            liquidityPools[fromToken].usdcReserve
+            fromPool.tokenReserve,
+            fromPool.usdcReserve
         );
         
         // Second swap from USDC to target token
         uint256 toAmount = getSwapAmount(
             usdcAmount,
-            liquidityPools[toToken].usdcReserve,
-            liquidityPools[toToken].tokenReserve
+            toPool.usdcReserve,
+            toPool.tokenReserve
         );
         
         require(toAmount >= minToAmount, "Insufficient output amount");
+        require(toAmount <= toPool.tokenReserve, "Insufficient liquidity");
         
         // Execute transfers
         IERC20(fromToken).transferFrom(msg.sender, address(this), fromAmount);
         IERC20(toToken).transfer(msg.sender, toAmount);
         
         // Update pools
-        liquidityPools[fromToken].tokenReserve += fromAmount;
-        liquidityPools[toToken].tokenReserve -= toAmount;
+        fromPool.tokenReserve += fromAmount;
+        toPool.tokenReserve -= toAmount;
         
         emit TokenSwapped(fromToken, toToken, msg.sender, fromAmount, toAmount);
     }

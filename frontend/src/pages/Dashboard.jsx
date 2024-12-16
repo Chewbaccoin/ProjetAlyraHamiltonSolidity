@@ -432,12 +432,13 @@ const InvestorDashboard = () => {
     })) || [],
   });
 
-  // Get royalties received for owned tokens
-  const { data: royaltiesData } = useReadContracts({
+  // Replace the royalties calculation with claimed royalties
+  const { data: claimedRoyaltiesData } = useReadContracts({
     contracts: ownedTokens?.map(tokenAddress => ({
       address: tokenAddress,
       abi: CONTRACTS?.RoyaltyToken?.abi,
-      functionName: 'getRoyaltiesReceived',
+      functionName: 'getTotalRoyaltiesClaimed',
+      args: [address],
     })) || [],
   });
 
@@ -452,10 +453,10 @@ const InvestorDashboard = () => {
     }
   }, [allTokens, tokenBalances]);
 
-  // Calculate total earnings when royalties data changes
+  // Update the total earnings calculation
   useEffect(() => {
-    if (royaltiesData) {
-      const total = royaltiesData.reduce((sum, data) => {
+    if (claimedRoyaltiesData) {
+      const total = claimedRoyaltiesData.reduce((sum, data) => {
         if (data.status === 'success') {
           return sum + Number(formatEther(data.result));
         }
@@ -463,7 +464,7 @@ const InvestorDashboard = () => {
       }, 0);
       setTotalEarnings(total);
     }
-  }, [royaltiesData]);
+  }, [claimedRoyaltiesData]);
 
   return (
     <div className="space-y-8">
@@ -492,7 +493,7 @@ const InvestorDashboard = () => {
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Total Earnings</p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {`${totalEarnings.toFixed(2)} ETH`}
+              {`${totalEarnings.toFixed(4)} ETH`}
             </p>
           </div>
         </div>

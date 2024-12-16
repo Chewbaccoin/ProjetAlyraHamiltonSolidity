@@ -2,7 +2,7 @@
 export const CONTRACTS = {
     ArtistSBT: {
       //address: "ARTIST_SBT_ADDRESS",
-      address: "0x1d2B53e943Df6A92F361dE865a714d9c4bd84D53",
+      address: "0xb937FDB0fAB9180d56eBf4775148296B8dc30Db9",
       abi: [
         {
           "inputs": [],
@@ -693,7 +693,7 @@ export const CONTRACTS = {
     },
     TokenFactory: {
       //address: "TOKEN_FACTORY_ADDRESS",
-      address: "0xf8b341Bc958a4cD2de25Fa2AAbe4D01b71Ee5A9b",
+      address: "0x22d8887c50Ce3E6461ca8C73DA5bD6BD59c1Be09",
       abi: [
         {
           "inputs": [
@@ -1391,7 +1391,7 @@ export const CONTRACTS = {
           ],
           "name": "distributeRoyalties",
           "outputs": [],
-          "stateMutability": "nonpayable",
+          "stateMutability": "payable",
           "type": "function"
         },
         {
@@ -1410,6 +1410,25 @@ export const CONTRACTS = {
         {
           "inputs": [],
           "name": "getTotalAmountRaised",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "investor",
+              "type": "address"
+            }
+          ],
+          "name": "getTotalRoyaltiesClaimed",
           "outputs": [
             {
               "internalType": "uint256",
@@ -1588,6 +1607,19 @@ export const CONTRACTS = {
         },
         {
           "inputs": [],
+          "name": "totalInvestments",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
           "name": "totalSupply",
           "outputs": [
             {
@@ -1666,6 +1698,25 @@ export const CONTRACTS = {
           "type": "function"
         },
         {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "userInvestments",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
           "stateMutability": "payable",
           "type": "receive"
         }
@@ -1673,7 +1724,7 @@ export const CONTRACTS = {
     },
     DAI: {
       //address: "DAI_ADDRESS",
-      address: "0x9113Cab668a3119a2E06380C28229d8feb67c678",
+      address: "0x9a92E9841383Cc4dfFD28294EDF3adA6F12B480b",
       abi: [
         {
           "inputs": [],
@@ -2085,7 +2136,7 @@ export const CONTRACTS = {
     },
     USDC: {
       //address: "USDC_ADDRESS",
-      address: "0x72E39BF7D83Cc079b2763dcAFAF6E92cafAf3462",
+      address: "0xd05839B4E2b8690B4aD44b6301C7090E2C6E25C7",
       abi:  [
         {
           "inputs": [],

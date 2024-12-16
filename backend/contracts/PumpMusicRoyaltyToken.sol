@@ -84,6 +84,7 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
         uint256 _tokenPrice,
         address _daiAddress
     ) ERC20(name, symbol) Ownable(msg.sender) {
+        require(_royaltyPercentage > 0, "Invalid royalty percentage");
         royaltyInfo.royaltyPercentage = _royaltyPercentage;
         royaltyInfo.expirationDate = block.timestamp + _duration;
         tokenPrice = _tokenPrice;
@@ -95,6 +96,7 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
     /// @dev Deduct platform fees and update total royalties
     /// @param amount Amount of royalties to distribute
     function distributeRoyalties(uint256 amount) external payable nonReentrant {
+        require(amount > 0, "Amount must be greater than 0");
         if (block.timestamp >= royaltyInfo.expirationDate) revert RoyaltyPeriodExpired();
         
         // Verify that the sent ETH matches the amount parameter
@@ -152,8 +154,8 @@ contract PumpMusicRoyaltyToken is ERC20, Ownable, ReentrancyGuard {
     /// @dev Transfer DAI to seller and tokens to buyer
     /// @param amount Number of tokens to purchase (in wei)
     function purchaseTokens(uint256 amount) external nonReentrant {
-        if (!isListedForSale) revert TokensNotListed();
         if (amount == 0) revert InvalidAmount();
+        if (!isListedForSale) revert TokensNotListed();
         
         // Calculate cost in DAI (both DAI and our token use 18 decimals)
         uint256 cost = (amount * tokenPrice) / (10**decimals());

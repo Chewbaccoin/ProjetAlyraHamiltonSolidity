@@ -241,5 +241,101 @@ describe("PumpMusicSwap", function () {
                 )
             ).to.be.revertedWith("Insufficient output amount");
         });
+
+        it("should revert when adding liquidity with zero amounts", async function () {
+            const { swap, token1 } = await loadFixture(deploySwapFixture);
+            await expect(swap.addLiquidity(
+                await token1.getAddress(),
+                0,
+                ethers.parseUnits("100", 6)
+            )).to.be.revertedWith("Amounts must be greater than 0");
+        });
+
+        it("should revert when pool has insufficient liquidity", async function () {
+            const { swap, mockUSDC, token1, user1 } = await loadFixture(deploySwapFixture);
+            
+            // First add minimal liquidity to make the pool active
+            const smallAmount = ethers.parseEther("1");
+            const smallUsdcAmount = ethers.parseUnits("1", 6);
+            
+            await token1.connect(user1).approve(await swap.getAddress(), smallAmount);
+            await mockUSDC.connect(user1).approve(await swap.getAddress(), smallUsdcAmount);
+            await swap.connect(user1).addLiquidity(await token1.getAddress(), smallAmount, smallUsdcAmount);
+            
+            // Try to swap an amount larger than the pool's liquidity
+            const largeAmount = ethers.parseEther("100");
+            await token1.connect(user1).approve(await swap.getAddress(), largeAmount);
+            
+            await expect(swap.connect(user1).swapTokenForUSDC(
+                await token1.getAddress(),
+                largeAmount,
+                0
+            )).to.be.revertedWith("Insufficient liquidity");
+        });
+    });
+
+    describe("Token to Token Swap", function () {
+        it("should allow swapping between two tokens", async function () {
+            const { swap, mockUSDC, token1, token2, user1, user2 } = await loadFixture(deploySwapFixture);
+            
+            // Add liquidity for both tokens
+            const tokenAmount = ethers.parseEther("1000");
+            const usdcAmount = ethers.parseUnits("1000", 6);
+
+            // Add liquidity for token1
+            await token1.connect(user1).approve(await swap.getAddress(), tokenAmount);
+            await mockUSDC.connect(user1).approve(await swap.getAddress(), usdcAmount);
+            await swap.connect(user1).addLiquidity(await token1.getAddress(), tokenAmount, usdcAmount);
+
+            // Add liquidity for token2
+            await token2.connect(user2).approve(await swap.getAddress(), tokenAmount);
+            await mockUSDC.connect(user2).approve(await swap.getAddress(), usdcAmount);
+            await swap.connect(user2).addLiquidity(await token2.getAddress(), tokenAmount, usdcAmount);
+
+            // Perform token to token swap
+            const swapAmount = ethers.parseEther("100");
+            const minOutputAmount = ethers.parseEther("75"); // Lowered to account for double fees and price impact
+
+            await token1.connect(user1).approve(await swap.getAddress(), swapAmount);
+            await expect(
+                swap.connect(user1).swapTokenForToken(
+                    await token1.getAddress(),
+                    await token2.getAddress(),
+                    swapAmount,
+                    minOutputAmount
+                )
+            ).to.emit(swap, "TokenSwapped");
+        });
+
+        it("should revert when output amount is insufficient", async function () {
+            const { swap, mockUSDC, token1, token2, user1, user2 } = await loadFixture(deploySwapFixture);
+            
+            // Add liquidity for both tokens
+            const tokenAmount = ethers.parseEther("1000");
+            const usdcAmount = ethers.parseUnits("1000", 6);
+
+            // Add liquidity for token1
+            await token1.connect(user1).approve(await swap.getAddress(), tokenAmount);
+            await mockUSDC.connect(user1).approve(await swap.getAddress(), usdcAmount);
+            await swap.connect(user1).addLiquidity(await token1.getAddress(), tokenAmount, usdcAmount);
+
+            // Add liquidity for token2
+            await token2.connect(user2).approve(await swap.getAddress(), tokenAmount);
+            await mockUSDC.connect(user2).approve(await swap.getAddress(), usdcAmount);
+            await swap.connect(user2).addLiquidity(await token2.getAddress(), tokenAmount, usdcAmount);
+
+            const swapAmount = ethers.parseEther("100");
+            const unreasonableMinAmount = ethers.parseEther("1000");
+            
+            await token1.connect(user1).approve(await swap.getAddress(), swapAmount);
+            await expect(
+                swap.connect(user1).swapTokenForToken(
+                    await token1.getAddress(),
+                    await token2.getAddress(),
+                    swapAmount,
+                    unreasonableMinAmount
+                )
+            ).to.be.revertedWith("Insufficient output amount");
+        });
     });
 });

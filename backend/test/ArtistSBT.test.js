@@ -101,6 +101,16 @@ describe("ArtistSBT", function () {
                 artistSBT.tokenOfOwner(artist2.address)
             ).to.be.revertedWith("Not a verified artist");
         });
+
+        it("should handle non-verified artist with no token", async function () {
+            // Create a new address that has never been verified
+            const nonVerifiedArtist = ethers.Wallet.createRandom().address;
+            
+            // Try to get token of non-verified artist
+            await expect(
+                artistSBT.tokenOfOwner(nonVerifiedArtist)
+            ).to.be.revertedWith("Not a verified artist");
+        });
     });
 
     describe("Soulbound Characteristics", function () {
@@ -183,6 +193,35 @@ describe("ArtistSBT", function () {
             expect(revokedArtists).to.have.lengthOf(2);
             expect(revokedArtists).to.include(artist1.address);
             expect(revokedArtists).to.include(artist2.address);
+        });
+    });
+
+    describe("tokenOfOwner", function () {
+        it("should revert when checking token for non-verified artist", async function () {
+            await expect(artistSBT.tokenOfOwner(nonOwner.address))
+                .to.be.revertedWith("Not a verified artist");
+        });
+
+        it("should handle edge cases in tokenOfOwner", async function () {
+            // Test with non-verified address (not zero address)
+            await expect(artistSBT.tokenOfOwner(nonOwner.address))
+                .to.be.revertedWith("Not a verified artist");
+            
+            // Test with zero address - should revert with ERC721InvalidOwner
+            await expect(artistSBT.tokenOfOwner(ethers.ZeroAddress))
+                .to.be.revertedWithCustomError(artistSBT, "ERC721InvalidOwner");
+        });
+    });
+
+    describe("Edge Cases", function () {
+        it("should handle zero address in tokenOfOwner", async function () {
+            await expect(artistSBT.tokenOfOwner(ethers.ZeroAddress))
+                .to.be.revertedWithCustomError(artistSBT, "ERC721InvalidOwner");
+        });
+
+        it("should handle non-existent token queries", async function () {
+            await expect(artistSBT.ownerOf(999))
+                .to.be.revertedWithCustomError(artistSBT, "ERC721NonexistentToken");
         });
     });
 }); 

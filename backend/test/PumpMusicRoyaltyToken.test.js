@@ -551,4 +551,47 @@ describe("PumpMusicRoyaltyToken", function () {
                 .to.be.closeTo(expectedRoyalties, 2);
         });
     });
+
+    describe("Royalty Period", function () {
+        it("should correctly check if royalty period is active", async function () {
+            const { royaltyToken } = await loadFixture(deployTokenFixture);
+            
+            // Should be active initially
+            expect(await royaltyToken.isRoyaltyPeriodActive()).to.be.true;
+
+            // Increase time beyond duration
+            await ethers.provider.send("evm_increaseTime", [366 * 24 * 60 * 60]); // 366 days
+            await ethers.provider.send("evm_mine");
+
+            // Should be inactive after period expires
+            expect(await royaltyToken.isRoyaltyPeriodActive()).to.be.false;
+        });
+    });
+
+    describe("Edge Cases", function () {
+        it("should handle zero amount token purchases", async function () {
+            const { royaltyToken } = await loadFixture(deployTokenFixture);
+            await expect(royaltyToken.purchaseTokens(0))
+                .to.be.revertedWithCustomError(royaltyToken, "InvalidAmount");
+        });
+
+        it("should prevent distributing zero royalties", async function () {
+            const { royaltyToken, artist } = await loadFixture(deployTokenFixture);
+            await expect(royaltyToken.connect(artist).distributeRoyalties(0))
+                .to.be.revertedWith("Amount must be greater than 0");
+        });
+
+        it("should handle multiple royalty distributions", async function () {
+            const { royaltyToken, artist } = await loadFixture(deployTokenFixture);
+            await royaltyToken.connect(artist).distributeRoyalties(ethers.parseEther("1"), {
+                value: ethers.parseEther("1")
+            });
+            await royaltyToken.connect(artist).distributeRoyalties(ethers.parseEther("2"), {
+                value: ethers.parseEther("2")
+            });
+            // Verify cumulative royalties
+            const royaltyInfo = await royaltyToken.royaltyInfo();
+            expect(royaltyInfo.totalRoyalties).to.be.gt(ethers.parseEther("2.5"));
+        });
+    });
 });
