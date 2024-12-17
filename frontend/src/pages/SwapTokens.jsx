@@ -65,25 +65,41 @@ const SwapTokens = () => {
     })) || [],
   });
 
+  // Get pool reserves for the selected tokens
+  const { data: poolReserves } = useReadContract({
+    address: CONTRACTS?.PumpMusicSwap?.address,
+    abi: CONTRACTS?.PumpMusicSwap?.abi,
+    functionName: 'liquidityPools',
+    args: [toToken],
+    enabled: !!toToken && !!CONTRACTS?.PumpMusicSwap?.address,
+  });
+
   // Get estimated output amount
   const { data: estimatedOutput } = useReadContract({
     address: CONTRACTS?.PumpMusicSwap?.address,
     abi: CONTRACTS?.PumpMusicSwap?.abi,
     functionName: 'getSwapAmount',
-    args: fromAmount && [
+    args: fromAmount && fromToken && toToken && poolReserves ? [
       parseUnits(fromAmount || '0', 18),
-      fromToken,
-      toToken,
-    ],
-    enabled: !!(fromAmount && fromToken && toToken),
+      poolReserves.tokenReserve,    // reserveIn
+      poolReserves.daiReserve,      // reserveOut
+    ] : undefined,
+    enabled: !!(fromAmount && fromToken && toToken && poolReserves && 
+      poolReserves.tokenReserve && poolReserves.daiReserve),
   });
 
   // Update estimated output when inputs change
   useEffect(() => {
+    console.log('Pool Reserves:', poolReserves); // Debug log
+    console.log('Estimated Output:', estimatedOutput); // Debug log
+    
     if (estimatedOutput) {
-      setToAmount(formatUnits(estimatedOutput, 18));
+      const formattedAmount = formatUnits(estimatedOutput, 18);
+      setToAmount(formattedAmount);
+    } else {
+      setToAmount('');
     }
-  }, [estimatedOutput]);
+  }, [estimatedOutput, poolReserves]);
 
   // Add new function to check allowances
   const checkAllowance = async (token, amount) => {
@@ -156,15 +172,15 @@ const SwapTokens = () => {
       setIsSwapping(true);
 
       const amountIn = parseUnits(fromAmount, 18);
+      const minAmountOut = parseUnits(toAmount, 18) * 95n / 100n; // Changed to use native bigint operations
       
       // Check if swapping with DAI
       const isFromBase = fromToken === CONTRACTS.DAI.address;
       const isToBase = toToken === CONTRACTS.DAI.address;
 
-      // Set up approval
-      const tokenToApprove = isFromBase ? fromToken : toToken;
+      // Always check allowance for the fromToken
       const allowance = await readContract(config, {
-        address: tokenToApprove,
+        address: fromToken,
         abi: CONTRACTS.RoyaltyToken.abi,
         functionName: 'allowance',
         args: [address, CONTRACTS.PumpMusicSwap.address],
@@ -173,7 +189,7 @@ const SwapTokens = () => {
       if (allowance < amountIn) {
         setIsApproving(true);
         const approveHash = await writeContract({
-          address: tokenToApprove,
+          address: fromToken,
           abi: CONTRACTS.RoyaltyToken.abi,
           functionName: 'approve',
           args: [CONTRACTS.PumpMusicSwap.address, amountIn],
@@ -190,11 +206,7 @@ const SwapTokens = () => {
           address: CONTRACTS.PumpMusicSwap.address,
           abi: CONTRACTS.PumpMusicSwap.abi,
           functionName: 'swapDAIForToken',
-          args: [
-            toToken,
-            amountIn,
-            parseUnits(toAmount, 18).mul(95).div(100), // 5% slippage
-          ],
+          args: [toToken, amountIn, minAmountOut],
         });
       } else if (!isFromBase && isToBase) {
         // Royalty token to DAI
@@ -202,11 +214,7 @@ const SwapTokens = () => {
           address: CONTRACTS.PumpMusicSwap.address,
           abi: CONTRACTS.PumpMusicSwap.abi,
           functionName: 'swapTokenForDAI',
-          args: [
-            fromToken,
-            amountIn,
-            parseUnits(toAmount, 18).mul(95).div(100), // 5% slippage
-          ],
+          args: [fromToken, amountIn, minAmountOut],
         });
       } else {
         // Token to token
@@ -214,12 +222,7 @@ const SwapTokens = () => {
           address: CONTRACTS.PumpMusicSwap.address,
           abi: CONTRACTS.PumpMusicSwap.abi,
           functionName: 'swapTokenForToken',
-          args: [
-            fromToken,
-            toToken,
-            amountIn,
-            parseUnits(toAmount, 18).mul(95).div(100), // 5% slippage
-          ],
+          args: [fromToken, toToken, amountIn, minAmountOut],
         });
       }
       
@@ -230,6 +233,7 @@ const SwapTokens = () => {
       setToAmount('');
       
     } catch (err) {
+      console.error('Swap error:', err);
       setError(err.message);
     } finally {
       setIsSwapping(false);
@@ -871,7 +875,10 @@ const SwapTokens = () => {
                               <SelectContent>
                                 {userLPHoldings.map((holding) => (
                                   <SelectItem key={holding.lpToken} value={holding.lpToken}>
-                                    {`LP Token Balance: ${parseFloat(formatUnits(holding.balance, 18)).toFixed(6)}`}
+                                    {`LP Token Balance: ${Number(formatUnits(holding.balance, 18)).toLocaleString('en-US', {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 8
+                                    })}`}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -1293,7 +1300,10 @@ const SwapTokens = () => {
                               <SelectContent>
                                 {userLPHoldings.map((holding) => (
                                   <SelectItem key={holding.lpToken} value={holding.lpToken}>
-                                    {`LP Token Balance: ${parseFloat(formatUnits(holding.balance, 18)).toFixed(6)}`}
+                                    {`LP Token Balance: ${Number(formatUnits(holding.balance, 18)).toLocaleString('en-US', {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 8
+                                    })}`}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -1715,7 +1725,10 @@ const SwapTokens = () => {
                               <SelectContent>
                                 {userLPHoldings.map((holding) => (
                                   <SelectItem key={holding.lpToken} value={holding.lpToken}>
-                                    {`LP Token Balance: ${parseFloat(formatUnits(holding.balance, 18)).toFixed(6)}`}
+                                    {`LP Token Balance: ${Number(formatUnits(holding.balance, 18)).toLocaleString('en-US', {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 8
+                                    })}`}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -2136,7 +2149,10 @@ const SwapTokens = () => {
                             <SelectContent>
                               {userLPHoldings.map((holding) => (
                                 <SelectItem key={holding.lpToken} value={holding.lpToken}>
-                                  {`LP Token Balance: ${parseFloat(formatUnits(holding.balance, 18)).toFixed(6)}`}
+                                  {`LP Token Balance: ${Number(formatUnits(holding.balance, 18)).toLocaleString('en-US', {
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 8
+                                  })}`}
                                 </SelectItem>
                               ))}
                             </SelectContent>
