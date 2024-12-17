@@ -14,11 +14,11 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
 
     /// @notice Structure for liquidity pools
     /// @param tokenReserve Royalty token reserve
-    /// @param usdcReserve USDC reserve
+    /// @param daiReserve DAI reserve
     /// @param isActive Pool activation status
     struct LiquidityPool {
         uint256 tokenReserve;
-        uint256 usdcReserve;
+        uint256 daiReserve;
         bool isActive;
     }
 
@@ -28,12 +28,12 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
     uint256 private constant BASIS_POINTS = 1000; // For fee calculations
     
     // STATE VARIABLES
-    IERC20 public immutable USDC;
+    IERC20 public immutable DAI;
     mapping(address => LiquidityPool) public liquidityPools;
     
     // EVENTS
-    event LiquidityAdded(address indexed token, uint256 tokenAmount, uint256 usdcAmount);
-    event LiquidityRemoved(address indexed token, uint256 tokenAmount, uint256 usdcAmount);
+    event LiquidityAdded(address indexed token, uint256 tokenAmount, uint256 daiAmount);
+    event LiquidityRemoved(address indexed token, uint256 tokenAmount, uint256 daiAmount);
     event TokenSwapped(
         address indexed fromToken,
         address indexed toToken,
@@ -43,39 +43,37 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
     );
 
     /// @notice Contract constructor
-    /// @param _usdc USDC contract address
-    constructor(address _usdc) Ownable(msg.sender) {
-        USDC = IERC20(_usdc);
+    /// @param _dai DAI contract address
+    constructor(address _dai) Ownable(msg.sender) {
+        DAI = IERC20(_dai);
     }
 
-    // LIQUIDITY MANAGEMENT FUNCTIONS
     /// @notice Adds liquidity to a pool
     /// @param tokenAddress Royalty token address
     /// @param tokenAmount Amount of tokens to add
-    /// @param usdcAmount Amount of USDC to add
+    /// @param daiAmount Amount of DAI to add
     function addLiquidity(
         address tokenAddress,
         uint256 tokenAmount,
-        uint256 usdcAmount
+        uint256 daiAmount
     ) external nonReentrant {
-        require(tokenAmount > 0 && usdcAmount > 0, "Amounts must be greater than 0");
+        require(tokenAmount > 0 && daiAmount > 0, "Amounts must be greater than 0");
         
         LiquidityPool storage pool = liquidityPools[tokenAddress];
         
         // Transfer tokens
         IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokenAmount);
-        USDC.transferFrom(msg.sender, address(this), usdcAmount);
+        DAI.transferFrom(msg.sender, address(this), daiAmount);
         
         // Update pool
         pool.tokenReserve += tokenAmount;
-        pool.usdcReserve += usdcAmount;
+        pool.daiReserve += daiAmount;
         pool.isActive = true;
         
-        emit LiquidityAdded(tokenAddress, tokenAmount, usdcAmount);
+        emit LiquidityAdded(tokenAddress, tokenAmount, daiAmount);
     }
 
     /// @notice Removes liquidity from a pool
-    /// @dev Allows withdrawing a percentage of provided liquidity
     /// @param tokenAddress Royalty token address
     /// @param percentage Percentage of liquidity to withdraw (1-100)
     function removeLiquidity(
@@ -89,83 +87,76 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         
         // Calculate amounts to withdraw
         uint256 tokenAmount = (pool.tokenReserve * percentage) / 100;
-        uint256 usdcAmount = (pool.usdcReserve * percentage) / 100;
+        uint256 daiAmount = (pool.daiReserve * percentage) / 100;
         
         // Update pool
         pool.tokenReserve -= tokenAmount;
-        pool.usdcReserve -= usdcAmount;
+        pool.daiReserve -= daiAmount;
         
         // Transfer tokens
         IERC20(tokenAddress).transfer(msg.sender, tokenAmount);
-        USDC.transfer(msg.sender, usdcAmount);
+        DAI.transfer(msg.sender, daiAmount);
         
-        emit LiquidityRemoved(tokenAddress, tokenAmount, usdcAmount);
+        emit LiquidityRemoved(tokenAddress, tokenAmount, daiAmount);
     }
 
-    // SWAP FUNCTIONS
-    /// @notice Swaps royalty tokens for USDC
+    /// @notice Swaps royalty tokens for DAI
     /// @param tokenAddress Token address to swap
     /// @param tokenAmount Amount of tokens to swap
-    /// @param minUSDCAmount Minimum expected USDC amount
-    function swapTokenForUSDC(
+    /// @param minDaiAmount Minimum expected DAI amount
+    function swapTokenForDAI(
         address tokenAddress,
         uint256 tokenAmount,
-        uint256 minUSDCAmount
+        uint256 minDaiAmount
     ) external nonReentrant {
         LiquidityPool storage pool = liquidityPools[tokenAddress];
         require(pool.isActive, "Pool not active");
         require(tokenAmount <= pool.tokenReserve, "Insufficient liquidity");
         
-        // Calculate USDC amount to receive
-        uint256 usdcAmount = getSwapAmount(
+        uint256 daiAmount = getSwapAmount(
             tokenAmount,
             pool.tokenReserve,
-            pool.usdcReserve
+            pool.daiReserve
         );
-        require(usdcAmount >= minUSDCAmount, "Insufficient output amount");
-        require(usdcAmount <= pool.usdcReserve, "Insufficient liquidity");
+        require(daiAmount >= minDaiAmount, "Insufficient output amount");
+        require(daiAmount <= pool.daiReserve, "Insufficient liquidity");
         
-        // Transfers
         IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokenAmount);
-        USDC.transfer(msg.sender, usdcAmount);
+        DAI.transfer(msg.sender, daiAmount);
         
-        // Update pool
         pool.tokenReserve += tokenAmount;
-        pool.usdcReserve -= usdcAmount;
+        pool.daiReserve -= daiAmount;
         
-        emit TokenSwapped(tokenAddress, address(USDC), msg.sender, tokenAmount, usdcAmount);
+        emit TokenSwapped(tokenAddress, address(DAI), msg.sender, tokenAmount, daiAmount);
     }
 
-    /// @notice Swaps USDC for royalty tokens
+    /// @notice Swaps DAI for royalty tokens
     /// @param tokenAddress Token address to receive
-    /// @param usdcAmount Amount of USDC to swap
+    /// @param daiAmount Amount of DAI to swap
     /// @param minTokenAmount Minimum expected token amount
-    function swapUSDCForToken(
+    function swapDAIForToken(
         address tokenAddress,
-        uint256 usdcAmount,
+        uint256 daiAmount,
         uint256 minTokenAmount
     ) external nonReentrant {
         LiquidityPool storage pool = liquidityPools[tokenAddress];
         require(pool.isActive, "Pool not active");
         
-        // Calculate token amount to receive
         uint256 tokenAmount = getSwapAmount(
-            usdcAmount,
-            pool.usdcReserve,
+            daiAmount,
+            pool.daiReserve,
             pool.tokenReserve
         );
         require(tokenAmount >= minTokenAmount, "Insufficient output amount");
         require(tokenAmount <= pool.tokenReserve, "Insufficient liquidity");
         
-        // Transfers
-        USDC.transferFrom(msg.sender, address(this), usdcAmount);
+        DAI.transferFrom(msg.sender, address(this), daiAmount);
         IERC20(tokenAddress).transfer(msg.sender, tokenAmount);
         
-        // Update pool
-        pool.usdcReserve += usdcAmount;
+        pool.daiReserve += daiAmount;
         pool.tokenReserve -= tokenAmount;
         
-        emit TokenSwapped(address(USDC), tokenAddress, msg.sender, usdcAmount, tokenAmount);
+        emit TokenSwapped(address(DAI), tokenAddress, msg.sender, daiAmount, tokenAmount);
     }
 
     /// @notice Direct swap between two royalty tokens
@@ -184,47 +175,40 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         
         require(fromPool.isActive && toPool.isActive, "Pool not active");
 
-        // First swap to USDC
-        uint256 usdcAmount = getSwapAmount(
+        uint256 daiAmount = getSwapAmount(
             fromAmount,
             fromPool.tokenReserve,
-            fromPool.usdcReserve
+            fromPool.daiReserve
         );
         
-        // Second swap from USDC to target token
         uint256 toAmount = getSwapAmount(
-            usdcAmount,
-            toPool.usdcReserve,
+            daiAmount,
+            toPool.daiReserve,
             toPool.tokenReserve
         );
         
         require(toAmount >= minToAmount, "Insufficient output amount");
         require(toAmount <= toPool.tokenReserve, "Insufficient liquidity");
         
-        // Execute transfers
         IERC20(fromToken).transferFrom(msg.sender, address(this), fromAmount);
         IERC20(toToken).transfer(msg.sender, toAmount);
         
-        // Update pools
         fromPool.tokenReserve += fromAmount;
         toPool.tokenReserve -= toAmount;
         
         emit TokenSwapped(fromToken, toToken, msg.sender, fromAmount, toAmount);
     }
 
-    // VIEW FUNCTIONS
-    /// @notice Gets the current price of a token in USDC
+    /// @notice Gets the current price of a token in DAI
     /// @param tokenAddress Token address
-    /// @return Token price in USDC (multiplied by 1e18 for precision)
+    /// @return Token price in DAI (multiplied by 1e18 for precision)
     function getTokenPrice(address tokenAddress) external view returns (uint256) {
         LiquidityPool memory pool = liquidityPools[tokenAddress];
         require(pool.isActive && pool.tokenReserve > 0, "Invalid pool");
-        return (pool.usdcReserve * 1e18 * SCALE_FACTOR) / pool.tokenReserve;
+        return (pool.daiReserve * 1e18) / pool.tokenReserve;
     }
 
-    // INTERNAL FUNCTIONS
     /// @notice Calculates the output amount for a swap
-    /// @dev Uses constant product formula (x * y = k)
     /// @param amountIn Input token amount
     /// @param reserveIn Input token reserve
     /// @param reserveOut Output token reserve

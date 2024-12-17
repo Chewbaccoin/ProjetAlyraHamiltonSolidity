@@ -29,9 +29,9 @@ body {
 }
 
 .page-main {
-  @apply max-w-7xl mx-auto px-4 py-8 pt-24; /* pt-24 crée un espacement uniforme sous le header fixe */
+  @apply max-w-7xl mx-auto px-4 py-8 pt-24;
 }
-/* Feature Card Styles */
+
 .feature-card {
   @apply p-8 rounded-2xl bg-white dark:bg-gray-800 
          hover:bg-gray-50 dark:hover:bg-gray-700
@@ -47,14 +47,12 @@ body {
          group-hover:bg-gray-200 dark:group-hover:bg-gray-600 transition-colors;
 }
 
-/* Stats Card Styles */
 .stats-card {
   @apply p-8 rounded-2xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm 
          hover:bg-white dark:hover:bg-gray-700 transition-all transform 
          hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/5;
 }
 
-/* Hero Title Styles */
 .hero-title {
   @apply text-6xl md:text-7xl font-bold tracking-tight mb-8 
          bg-gradient-to-r from-blue-500 via-purple-500 to-blue-400 
@@ -78,7 +76,6 @@ body {
   }
 }
 
-/* Create Token Page Styles */
 .create-token-container {
   @apply min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col;
 }
@@ -107,7 +104,6 @@ body {
   @apply text-gray-700 dark:text-gray-200;
 }
 
-/* Styles du marché de tokens */
 .token-market-container {
   @apply min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col;
 }
@@ -164,7 +160,6 @@ body {
   @apply w-full mt-4;
 }
 
-/* Token Market Search Styles */
 .token-market-search {
   @apply flex-1 relative;
 }
@@ -177,12 +172,10 @@ body {
   @apply pl-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white;
 }
 
-/* Token Market Filter Buttons */
 .token-market-filters {
   @apply flex gap-2;
 }
 
-/* Empty State Styles */
 .token-market-empty {
   @apply text-center py-12;
 }
@@ -199,7 +192,6 @@ body {
   @apply mt-2 text-gray-500 dark:text-gray-400;
 }
 
-/* Styles communs pour les conteneurs de pages */
 .page-container {
   @apply min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900;
 }
@@ -216,7 +208,6 @@ body {
   @apply p-3 rounded-full bg-purple-500/10;
 }
 
-/* Styles pour les messages d'alerte */
 .alert-container {
   @apply flex items-center justify-center flex-grow py-12;
 }
@@ -225,7 +216,6 @@ body {
   @apply flex items-center gap-2;
 }
 
-/* Styles pour les formulaires */
 .form-container {
   @apply bg-white dark:bg-gray-900/50 p-6 rounded-xl border border-gray-200 dark:border-gray-800;
 }
@@ -238,7 +228,6 @@ body {
   @apply text-gray-700 dark:text-gray-200;
 }
 
-/* Layout utilities */
 .page-wrapper {
   @apply min-h-screen flex flex-col;
 }
@@ -247,12 +236,10 @@ body {
   @apply flex-1 flex flex-col;
 }
 
-/* Section spacing */
 .section-spacing {
   @apply space-y-8;
 }
 
-/* Content containers */
 .content-container {
   @apply max-w-2xl mx-auto;
 }
@@ -261,12 +248,10 @@ body {
   @apply max-w-7xl mx-auto;
 }
 
-/* Grid layouts */
 .grid-cards {
   @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
 }
 
-/* Flex layouts */
 .flex-between {
   @apply flex items-center justify-between;
 }
@@ -275,7 +260,6 @@ body {
   @apply flex items-center justify-center;
 }
 
-/* Dashboard Styles */
 .artist-dashboard-container,
 .investor-dashboard-container {
   @apply space-y-8;
@@ -344,7 +328,6 @@ body {
   @apply mt-2 text-gray-500 dark:text-gray-400;
 }
 
-/* Ajouter dans index.css */
 .create-token-page {
   @apply flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900;
 }
@@ -385,17 +368,14 @@ body {
   @apply text-gray-400;
 }
 
-/* Pour le TokenMarket */
 .token-market-container {
   @apply flex flex-col min-h-screen;
 }
 
-/* Pour le Dashboard */
 .dashboard-container {
   @apply flex flex-col min-h-screen;
 }
 
-/* Ajoutez ces nouvelles classes */
 .dashboard-layout {
   @apply flex-1 flex flex-col;
 }
@@ -404,14 +384,12 @@ body {
   @apply flex-1 max-w-7xl mx-auto px-4 py-6 w-full;
 }
 
-/* Assurez-vous que le conteneur principal remplit toute la hauteur */
 .min-h-screen {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-/* Layouts de base */
 .page-layout {
   @apply min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col;
 }
@@ -420,12 +398,10 @@ body {
   @apply flex-1 max-w-7xl mx-auto w-full px-4 py-8 pt-24;
 }
 
-/* Conteneurs de section */
 .section-container {
   @apply space-y-8;
 }
 
-/* En-têtes de section */
 .section-header {
   @apply flex items-center gap-4 mb-8;
 }
@@ -442,7 +418,6 @@ body {
   @apply text-gray-600 dark:text-gray-400;
 }
 
-/* Grilles et cartes */
 .cards-grid {
   @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
 }
@@ -453,7 +428,6 @@ body {
          shadow-sm hover:shadow-md transition-all;
 }
 
-/* États vides */
 .empty-state {
   @apply flex flex-col items-center justify-center py-12 text-center;
 }
@@ -470,12 +444,10 @@ body {
   @apply text-gray-500 dark:text-gray-400;
 }
 
-/* Style spécifique pour le footer */
 footer {
-  @apply mt-auto; /* Ceci poussera le footer vers le bas */
+  @apply mt-auto;
 }
 
-/* Add this to your index.css */
 .search-field {
   @apply bg-white dark:bg-gray-800 
          text-gray-900 dark:text-white 
@@ -496,3 +468,119 @@ footer {
          text-gray-500 hover:text-gray-700 
          dark:hover:text-gray-300;
 }
+
+.swap-container {
+  @apply min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col;
+}
+
+.swap-main {
+  @apply flex-grow;
+}
+
+.swap-content {
+  @apply max-w-2xl mx-auto pt-32 pb-20 px-4;
+}
+
+.swap-title {
+  @apply text-4xl font-bold text-center mb-8 bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent;
+}
+
+.swap-tabs-list {
+  @apply flex w-full bg-gray-100 dark:bg-gray-800 p-1 gap-2 rounded-xl mb-8 relative z-20;
+}
+
+.swap-tab-trigger {
+  @apply flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg
+         data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700
+         data-[state=active]:shadow-sm
+         text-gray-600 dark:text-gray-400
+         data-[state=active]:text-gray-900 dark:data-[state=active]:text-white;
+}
+
+.swap-card {
+  @apply border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 
+         shadow-sm hover:shadow-md transition-all rounded-xl relative z-10;
+}
+
+.swap-card-gradient {
+  @apply absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 
+         opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none;
+}
+
+.swap-input-group {
+  @apply flex gap-2;
+}
+
+.swap-input {
+  @apply relative z-20 bg-white dark:bg-gray-700/50 border-gray-200 
+         dark:border-gray-600 rounded-xl focus:ring-gray-500;
+}
+
+.swap-button {
+  @apply w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-6 
+         font-medium transition-all duration-200;
+}
+
+.liquidity-info {
+  @apply mt-6 p-4 rounded-xl border border-gray-200 dark:border-gray-700;
+}
+
+.liquidity-info-title {
+  @apply text-sm font-medium text-gray-600 mb-2;
+}
+
+.liquidity-info-list {
+  @apply space-y-2 text-sm text-gray-400;
+}
+
+.liquidity-info-item {
+  @apply flex items-center gap-2;
+}
+
+.liquidity-info-bullet {
+  @apply w-1 h-1 rounded-full bg-indigo-400;
+}
+
+select {
+  @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-white;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  color-scheme: light dark;
+}
+
+select option {
+  @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-white;
+  background-color: var(--tw-bg-opacity);
+}
+
+@media (prefers-color-scheme: dark) {
+  select,
+  select option {
+    background: #1f2937;
+    color: white;
+  }
+}
+
+.swap-input {
+  @apply relative z-20 bg-white dark:bg-gray-700/50 border-gray-200 
+         dark:border-gray-600 rounded-xl focus:ring-gray-500;
+}
+
+.select-trigger {
+  @apply bg-white dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 
+         rounded-xl focus:ring-gray-500 focus:border-gray-500;
+}
+
+.select-content {
+  @apply bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700;
+}
+
+.select-item {
+  @apply hover:bg-gray-100 dark:hover:bg-gray-700;
+}
+
+select:focus {
+  @apply ring-gray-500 border-gray-500;
+}
+

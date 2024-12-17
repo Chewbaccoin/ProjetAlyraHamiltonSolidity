@@ -14,6 +14,14 @@ async function main() {
     await mockDAI.waitForDeployment();
     console.log("MockDAI deployed to:", await mockDAI.getAddress());
 
+    // Mint 10,000,000 DAI to specified address
+    console.log("\nMinting 10,000,000 DAI...");
+    await mockDAI.mint(
+        process.env.PUBLIC_TEST_ADDRESS,
+        ethers.parseUnits("10000000", 18)
+    );
+    console.log("DAI minted successfully");
+
     // Deploy MockUSDC second (for testnet only)
     console.log("\nDeploying MockUSDC...");
     const MockUSDC = await ethers.getContractFactory("MockUSDC");
