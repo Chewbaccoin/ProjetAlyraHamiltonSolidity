@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./LPToken.sol";
 
 /// @title PumpMusicSwap
 /// @notice Contract for managing royalty token exchanges
@@ -30,6 +32,8 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
     // STATE VARIABLES
     IERC20 public immutable DAI;
     mapping(address => LiquidityPool) public liquidityPools;
+    mapping(address => IERC20) public lpTokens;
+    address[] public allLPTokens;
     
     // EVENTS
     event LiquidityAdded(address indexed token, uint256 tokenAmount, uint256 daiAmount);
@@ -41,6 +45,10 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         uint256 amountIn,
         uint256 amountOut
     );
+    event LPTokenDeployed(address indexed token, address indexed lpToken);
+
+    // Add this line near the top of your PumpMusicSwap contract, with other error definitions
+    error InvalidPercentage();
 
     /// @notice Contract constructor
     /// @param _dai DAI contract address
@@ -61,6 +69,24 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         
         LiquidityPool storage pool = liquidityPools[tokenAddress];
         
+        // Get or create LP token
+        IERC20 lpToken = lpTokens[tokenAddress];
+        if (address(lpToken) == address(0)) {
+            lpToken = createLPToken(tokenAddress);
+        }
+
+        // Calculate LP tokens to mint
+        uint256 lpTokensToMint;
+        if (pool.tokenReserve == 0) {
+            lpTokensToMint = Math.sqrt(tokenAmount * daiAmount);
+        } else {
+            uint256 lpTokenSupply = lpToken.totalSupply();
+            lpTokensToMint = Math.min(
+                (tokenAmount * lpTokenSupply) / pool.tokenReserve,
+                (daiAmount * lpTokenSupply) / pool.daiReserve
+            );
+        }
+        
         // Transfer tokens
         IERC20(tokenAddress).transferFrom(msg.sender, address(this), tokenAmount);
         DAI.transferFrom(msg.sender, address(this), daiAmount);
@@ -70,24 +96,35 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         pool.daiReserve += daiAmount;
         pool.isActive = true;
         
+        // Mint LP tokens
+        LPToken(address(lpToken)).mint(msg.sender, lpTokensToMint);
+        
         emit LiquidityAdded(tokenAddress, tokenAmount, daiAmount);
     }
 
     /// @notice Removes liquidity from a pool
     /// @param tokenAddress Royalty token address
-    /// @param percentage Percentage of liquidity to withdraw (1-100)
+    /// @param lpTokenAmount Amount of LP tokens to withdraw
     function removeLiquidity(
         address tokenAddress,
-        uint256 percentage
+        uint256 lpTokenAmount
     ) external nonReentrant {
-        require(percentage > 0 && percentage <= 100, "Invalid percentage");
-        
         LiquidityPool storage pool = liquidityPools[tokenAddress];
         require(pool.isActive, "Pool not active");
         
-        // Calculate amounts to withdraw
-        uint256 tokenAmount = (pool.tokenReserve * percentage) / 100;
-        uint256 daiAmount = (pool.daiReserve * percentage) / 100;
+        IERC20 lpToken = lpTokens[tokenAddress];
+        require(address(lpToken) != address(0), "LP token not found");
+        
+        uint256 lpTokenSupply = lpToken.totalSupply();
+        if (lpTokenAmount > lpTokenSupply) {
+            revert InvalidPercentage();
+        }
+        
+        uint256 tokenAmount = (pool.tokenReserve * lpTokenAmount) / lpTokenSupply;
+        uint256 daiAmount = (pool.daiReserve * lpTokenAmount) / lpTokenSupply;
+        
+        // Burn LP tokens
+        LPToken(address(lpToken)).burn(msg.sender, lpTokenAmount);
         
         // Update pool
         pool.tokenReserve -= tokenAmount;
@@ -225,5 +262,48 @@ contract PumpMusicSwap is Ownable, ReentrancyGuard {
         uint256 denominator = (reserveIn * BASIS_POINTS) + amountInWithFee;
         
         return numerator / denominator;
+    }
+
+    /// @notice Creates a new LP token for a pool
+    /// @param tokenAddress Royalty token address
+    /// @return LP token contract address
+    function createLPToken(address tokenAddress) private returns (IERC20) {
+        string memory tokenSymbol = IERC20Metadata(tokenAddress).symbol();
+        string memory lpName = string(abi.encodePacked("PumpMusic LP ", tokenSymbol));
+        string memory lpSymbol = string(abi.encodePacked("PMP-LP-", tokenSymbol));
+        
+        LPToken lpToken = new LPToken(lpName, lpSymbol);
+        address lpTokenAddress = address(lpToken);
+        lpTokens[tokenAddress] = IERC20(lpTokenAddress);
+        allLPTokens.push(lpTokenAddress);
+        
+        emit LPTokenDeployed(tokenAddress, lpTokenAddress);
+        return IERC20(lpTokenAddress);
+    }
+
+    /// @notice Returns all LP tokens created by this contract
+    /// @return Array of LP token addresses
+    function getAllLPTokens() external view returns (address[] memory) {
+        return allLPTokens;
+    }
+
+    /// @notice Checks if an address holds any LP tokens created by this contract
+    /// @param holder Address to check
+    /// @return tokens Array of LP token addresses held by the user
+    /// @return balances Array of corresponding token balances
+    function getLPTokenHoldings(address holder) external view returns (
+        address[] memory tokens,
+        uint256[] memory balances
+    ) {
+        uint256 count = allLPTokens.length;
+        tokens = new address[](count);
+        balances = new uint256[](count);
+        
+        for (uint256 i = 0; i < count; i++) {
+            address lpToken = allLPTokens[i];
+            uint256 balance = IERC20(lpToken).balanceOf(holder);
+            tokens[i] = lpToken;
+            balances[i] = balance;
+        }
     }
 }

@@ -1,8 +1,7 @@
 // src/contracts/index.js
 export const CONTRACTS = {
     ArtistSBT: {
-      //address: "ARTIST_SBT_ADDRESS",
-      address: "0xcf9F368Bb67B4030456Bd1E86643F8b9c5fBe994",
+      address: "0x2E5405E4aF4ad8089E3262D2E1EE9B8b5Eb45bA8",
       abi: [
         {
           "inputs": [],
@@ -692,8 +691,7 @@ export const CONTRACTS = {
       ]
     },
     TokenFactory: {
-      //address: "TOKEN_FACTORY_ADDRESS",
-      address: "0x82A7AB54591F0fab523a2338402E835D9b2E0488",
+      address: "0xBd607dAbD6B803d008897538b4Dd17f7bcde158A",
       abi: [
         {
           "inputs": [
@@ -908,409 +906,7 @@ export const CONTRACTS = {
         }
       ]
     },
-    PumpMusicSwap: {
-      //address: "PUMP_MUSIC_SWAP_ADDRESS",
-      address: "0xd3773ac77Fde9562AfD783E093CeA8317538518F",
-      abi: [
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_dai",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "constructor"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "owner",
-              "type": "address"
-            }
-          ],
-          "name": "OwnableInvalidOwner",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "account",
-              "type": "address"
-            }
-          ],
-          "name": "OwnableUnauthorizedAccount",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "ReentrancyGuardReentrantCall",
-          "type": "error"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "token",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "tokenAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "daiAmount",
-              "type": "uint256"
-            }
-          ],
-          "name": "LiquidityAdded",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "token",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "tokenAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "daiAmount",
-              "type": "uint256"
-            }
-          ],
-          "name": "LiquidityRemoved",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "previousOwner",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "OwnershipTransferred",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "fromToken",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "toToken",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "user",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "amountIn",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "amountOut",
-              "type": "uint256"
-            }
-          ],
-          "name": "TokenSwapped",
-          "type": "event"
-        },
-        {
-          "inputs": [],
-          "name": "DAI",
-          "outputs": [
-            {
-              "internalType": "contract IERC20",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "SWAP_FEE",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "tokenAddress",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "tokenAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "daiAmount",
-              "type": "uint256"
-            }
-          ],
-          "name": "addLiquidity",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "amountIn",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "reserveIn",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "reserveOut",
-              "type": "uint256"
-            }
-          ],
-          "name": "getSwapAmount",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "pure",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "tokenAddress",
-              "type": "address"
-            }
-          ],
-          "name": "getTokenPrice",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "name": "liquidityPools",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "tokenReserve",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "daiReserve",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "isActive",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "owner",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "tokenAddress",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "percentage",
-              "type": "uint256"
-            }
-          ],
-          "name": "removeLiquidity",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "renounceOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "tokenAddress",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "daiAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "minTokenAmount",
-              "type": "uint256"
-            }
-          ],
-          "name": "swapDAIForToken",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "tokenAddress",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "tokenAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "minDaiAmount",
-              "type": "uint256"
-            }
-          ],
-          "name": "swapTokenForDAI",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "fromToken",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "toToken",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "fromAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "minToAmount",
-              "type": "uint256"
-            }
-          ],
-          "name": "swapTokenForToken",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "transferOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        }
-      ]
-    },
     RoyaltyToken: {
-      //address: "ROYALTY_TOKEN_ADDRESS",
       abi: [
         {
           "inputs": [
@@ -2123,9 +1719,945 @@ export const CONTRACTS = {
         }
       ]
     },
+    PumpMusicSwap: {
+      address: "0x6bfce361651796e3276b9612D3bD031887a79c73",
+      abi: [
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_dai",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "inputs": [],
+          "name": "InvalidPercentage",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnableInvalidOwner",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "OwnableUnauthorizedAccount",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "ReentrancyGuardReentrantCall",
+          "type": "error"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "token",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "lpToken",
+              "type": "address"
+            }
+          ],
+          "name": "LPTokenDeployed",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "token",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "tokenAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "daiAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "LiquidityAdded",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "token",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "tokenAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "daiAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "LiquidityRemoved",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "fromToken",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "toToken",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "amountIn",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "amountOut",
+              "type": "uint256"
+            }
+          ],
+          "name": "TokenSwapped",
+          "type": "event"
+        },
+        {
+          "inputs": [],
+          "name": "DAI",
+          "outputs": [
+            {
+              "internalType": "contract IERC20",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "SWAP_FEE",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "tokenAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "tokenAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "daiAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "addLiquidity",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "name": "allLPTokens",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "getAllLPTokens",
+          "outputs": [
+            {
+              "internalType": "address[]",
+              "name": "",
+              "type": "address[]"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "holder",
+              "type": "address"
+            }
+          ],
+          "name": "getLPTokenHoldings",
+          "outputs": [
+            {
+              "internalType": "address[]",
+              "name": "tokens",
+              "type": "address[]"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "balances",
+              "type": "uint256[]"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "amountIn",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "reserveIn",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "reserveOut",
+              "type": "uint256"
+            }
+          ],
+          "name": "getSwapAmount",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "pure",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "tokenAddress",
+              "type": "address"
+            }
+          ],
+          "name": "getTokenPrice",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "liquidityPools",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "tokenReserve",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "daiReserve",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isActive",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "lpTokens",
+          "outputs": [
+            {
+              "internalType": "contract IERC20",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "tokenAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lpTokenAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "removeLiquidity",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "renounceOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "tokenAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "daiAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minTokenAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "swapDAIForToken",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "tokenAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "tokenAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minDaiAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "swapTokenForDAI",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "fromToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "toToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "fromAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minToAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "swapTokenForToken",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "transferOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ]
+    },
+    LPToken: {  
+      abi: [
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "symbol",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "spender",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "allowance",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "needed",
+              "type": "uint256"
+            }
+          ],
+          "name": "ERC20InsufficientAllowance",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "sender",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "balance",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "needed",
+              "type": "uint256"
+            }
+          ],
+          "name": "ERC20InsufficientBalance",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "approver",
+              "type": "address"
+            }
+          ],
+          "name": "ERC20InvalidApprover",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "receiver",
+              "type": "address"
+            }
+          ],
+          "name": "ERC20InvalidReceiver",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "sender",
+              "type": "address"
+            }
+          ],
+          "name": "ERC20InvalidSender",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "spender",
+              "type": "address"
+            }
+          ],
+          "name": "ERC20InvalidSpender",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnableInvalidOwner",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "OwnableUnauthorizedAccount",
+          "type": "error"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "spender",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "value",
+              "type": "uint256"
+            }
+          ],
+          "name": "Approval",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "value",
+              "type": "uint256"
+            }
+          ],
+          "name": "Transfer",
+          "type": "event"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "spender",
+              "type": "address"
+            }
+          ],
+          "name": "allowance",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "spender",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "value",
+              "type": "uint256"
+            }
+          ],
+          "name": "approve",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "balanceOf",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "burn",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "decimals",
+          "outputs": [
+            {
+              "internalType": "uint8",
+              "name": "",
+              "type": "uint8"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "mint",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "name",
+          "outputs": [
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "renounceOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "symbol",
+          "outputs": [
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "totalSupply",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "value",
+              "type": "uint256"
+            }
+          ],
+          "name": "transfer",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "value",
+              "type": "uint256"
+            }
+          ],
+          "name": "transferFrom",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "transferOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ]
+    },
     DAI: {
-      //address: "DAI_ADDRESS",
-      address: "0xDE51bCA704Ebe7A5B16B895b086CE7bEACA383d0",
+      address: "0xA0028663180AdcFdeA10d67c18285a9000ad1f4C",
       abi: [
         {
           "inputs": [],
@@ -2536,8 +3068,7 @@ export const CONTRACTS = {
       
     },
     USDC: {
-      //address: "USDC_ADDRESS",
-      address: "0x5D0C37B1247d0d96c76a3372Fd4754ca617D98BA",
+      address: "0x20785Bf029da8C9Ab86942D6cdB900e9Ae708eEa",
       abi:  [
         {
           "inputs": [],

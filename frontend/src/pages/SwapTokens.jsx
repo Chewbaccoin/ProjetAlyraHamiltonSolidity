@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAccount, useReadContract, useReadContracts, useWriteContract, useConfig } from 'wagmi';
-import { parseUnits, formatUnits } from 'viem';
-import { ArrowDownUp, RefreshCcw, Loader2, Ban, Droplet } from 'lucide-react';
+import { parseUnits, formatUnits, isAddress, zeroAddress } from 'viem';
+import { ArrowDownUp, RefreshCcw, Loader2, Ban, Droplet, Check, Trash2 } from 'lucide-react';
 import { readContract, waitForTransactionReceipt } from '@wagmi/core';
-import { Alert, AlertDescription } from './components/ui/Alert';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/Select';
@@ -30,6 +29,21 @@ const SwapTokens = () => {
   const [lpToAmount, setLpToAmount] = useState('');
   const [isAddingLiquidity, setIsAddingLiquidity] = useState(false);
   const [activeTab, setActiveTab] = useState("swap");
+  const [firstTokenAllowance, setFirstTokenAllowance] = useState(false);
+  const [secondTokenAllowance, setSecondTokenAllowance] = useState(false);
+  const [isApprovingFirst, setIsApprovingFirst] = useState(false);
+  const [isApprovingSecond, setIsApprovingSecond] = useState(false);
+  const [isRemovingLiquidity, setIsRemovingLiquidity] = useState(false);
+  const [lpTokenBalance, setLpTokenBalance] = useState('0');
+  const [selectedPool, setSelectedPool] = useState('');
+  const [userLPHoldings, setUserLPHoldings] = useState([]);
+  const [selectedLPToken, setSelectedLPToken] = useState('');
+  const [lpTokenAmount, setLpTokenAmount] = useState('');
+  const [isLPTokenApproved, setIsLPTokenApproved] = useState(false);
+  const [isApprovingLPToken, setIsApprovingLPToken] = useState(false);
+  const [lpTokenMappings, setLpTokenMappings] = useState({});
+  const [tokenToLPMap, setTokenToLPMap] = useState({});
+  const [lpToTokenMap, setLpToTokenMap] = useState({});
 
   // Get all available tokens
   const { data: allTokens, isError: isTokensError } = useReadContract({
@@ -70,6 +84,69 @@ const SwapTokens = () => {
       setToAmount(formatUnits(estimatedOutput, 18));
     }
   }, [estimatedOutput]);
+
+  // Add new function to check allowances
+  const checkAllowance = async (token, amount) => {
+    if (!token || !amount) return false;
+    const amountBigInt = parseUnits(amount, 18);
+    const allowance = await readContract(config, {
+      address: token,
+      abi: CONTRACTS.RoyaltyToken.abi,
+      functionName: 'allowance',
+      args: [address, CONTRACTS.PumpMusicSwap.address],
+    });
+    return allowance >= amountBigInt;
+  };
+
+  // Add effect to check allowances when amounts change
+  useEffect(() => {
+    const updateAllowances = async () => {
+      if (fromToken && lpFromAmount) {
+        const hasAllowance = await checkAllowance(fromToken, lpFromAmount);
+        setFirstTokenAllowance(hasAllowance);
+      }
+      if (toToken && lpToAmount) {
+        const hasAllowance = await checkAllowance(toToken, lpToAmount);
+        setSecondTokenAllowance(hasAllowance);
+      }
+    };
+    updateAllowances();
+  }, [fromToken, toToken, lpFromAmount, lpToAmount]);
+
+  // Add function to handle token approvals
+  const handleApproveToken = async (token, amount, isFirst = true) => {
+    try {
+      if (isFirst) {
+        setIsApprovingFirst(true);
+      } else {
+        setIsApprovingSecond(true);
+      }
+      
+      const amountToApprove = parseUnits(amount, 18);
+      const approveHash = await writeContract({
+        address: token,
+        abi: CONTRACTS.RoyaltyToken.abi,
+        functionName: 'approve',
+        args: [CONTRACTS.PumpMusicSwap.address, amountToApprove],
+      });
+      
+      await waitForTransactionReceipt(config, { hash: approveHash });
+      
+      if (isFirst) {
+        setFirstTokenAllowance(true);
+      } else {
+        setSecondTokenAllowance(true);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      if (isFirst) {
+        setIsApprovingFirst(false);
+      } else {
+        setIsApprovingSecond(false);
+      }
+    }
+  };
 
   const handleSwap = async () => {
     if (!fromToken || !toToken || !fromAmount) return;
@@ -159,52 +236,64 @@ const SwapTokens = () => {
     }
   };
 
+  // Update handleAddLiquidity to remove approval logic
   const handleAddLiquidity = async () => {
-    if (!fromToken || !toToken || !lpFromAmount || !lpToAmount) return;
+    console.log('Starting handleAddLiquidity...');
+    
+    if (!fromToken || !toToken || !lpFromAmount || !lpToAmount) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    if (!firstTokenAllowance || !secondTokenAllowance) {
+      setError('Please approve both tokens first');
+      return;
+    }
     
     try {
-        setError('');
-        setIsAddingLiquidity(true);
+      setError('');
+      setIsAddingLiquidity(true);
 
-        const fromAmountIn = parseUnits(lpFromAmount, 18);
-        const toAmountIn = parseUnits(lpToAmount, 18);
+      const fromAmountIn = parseUnits(lpFromAmount, 18);
+      const toAmountIn = parseUnits(lpToAmount, 18);
 
-        // Approve both tokens
-        const approveToken = await writeContract({
-            address: fromToken,
-            abi: CONTRACTS.RoyaltyToken.abi,
-            functionName: 'approve',
-            args: [CONTRACTS.PumpMusicSwap.address, fromAmountIn],
-        });
-        await waitForTransactionReceipt(config, { hash: approveToken });
+      // Check if either token is DAI
+      const isFromDAI = fromToken === CONTRACTS.DAI.address;
+      const isToDAI = toToken === CONTRACTS.DAI.address;
 
-        const approveDAI = await writeContract({
-            address: CONTRACTS.DAI.address,
-            abi: CONTRACTS.DAI.abi,
-            functionName: 'approve',
-            args: [CONTRACTS.PumpMusicSwap.address, toAmountIn],
-        });
-        await waitForTransactionReceipt(config, { hash: approveDAI });
+      if (!isFromDAI && !isToDAI) {
+        setError('One token must be DAI');
+        return;
+      }
 
-        // Add liquidity
-        const addLiquidityHash = await writeContract({
-            address: CONTRACTS.PumpMusicSwap.address,
-            abi: CONTRACTS.PumpMusicSwap.abi,
-            functionName: 'addLiquidity',
-            args: [fromToken, fromAmountIn, toAmountIn],
-        });
-        
-        await waitForTransactionReceipt(config, { hash: addLiquidityHash });
-        
-        // Clear form
-        setLpFromAmount('');
-        setLpToAmount('');
-        
+      // Prepare transaction parameters
+      const royaltyToken = isFromDAI ? toToken : fromToken;
+      const royaltyAmount = isFromDAI ? toAmountIn : fromAmountIn;
+      const daiAmount = isFromDAI ? fromAmountIn : toAmountIn;
+
+      // Call the correct function name 'addLiquidity' instead of 'addLiquidityDAI'
+      const hash = await writeContract({
+        address: CONTRACTS.PumpMusicSwap.address,
+        abi: CONTRACTS.PumpMusicSwap.abi,
+        functionName: 'addLiquidity',
+        args: [royaltyToken, royaltyAmount, daiAmount],
+      });
+
+      if (!hash) {
+        throw new Error('Transaction failed to initiate');
+      }
+
+      await waitForTransactionReceipt(config, { hash });
+      
+      // Clear form after successful transaction
+      setLpFromAmount('');
+      setLpToAmount('');
+      
     } catch (err) {
-        console.error('Add Liquidity Error:', err);
-        setError(err.message);
+      console.error('Add liquidity error:', err);
+      setError(err.message || 'Failed to add liquidity');
     } finally {
-        setIsAddingLiquidity(false);
+      setIsAddingLiquidity(false);
     }
   };
 
@@ -236,6 +325,238 @@ const SwapTokens = () => {
     if (address === CONTRACTS.DAI.address) return 'DAI';
     return tokenNames?.[allTokens?.indexOf(address)]?.result || 'Loading...';
   };
+
+  useEffect(() => {
+    console.log('PumpMusicSwap ABI:', CONTRACTS.PumpMusicSwap.abi);
+  }, []);
+
+  useEffect(() => {
+    const addLiquidityFunction = CONTRACTS.PumpMusicSwap.abi.find(
+      item => item.name === 'addLiquidityDAI'
+    );
+    console.log('addLiquidityDAI function:', addLiquidityFunction);
+  }, []);
+
+  // Add new query to get LP token balance
+  const { data: lpBalance } = useReadContract({
+    address: selectedPool ? lpTokens?.[selectedPool] : undefined,
+    abi: CONTRACTS?.LPToken?.abi,
+    functionName: 'balanceOf',
+    args: [address],
+    enabled: !!(selectedPool && lpTokens?.[selectedPool] && isAddress(selectedPool)),
+  });
+
+  // Update LP token balance when pool changes
+  useEffect(() => {
+    if (lpBalance) {
+      setLpTokenBalance(formatUnits(lpBalance, 18));
+    }
+  }, [lpBalance]);
+
+  // Add new query to get user's LP holdings
+  const { data: lpHoldings } = useReadContract({
+    address: CONTRACTS?.PumpMusicSwap?.address,
+    abi: CONTRACTS?.PumpMusicSwap?.abi,
+    functionName: 'getLPTokenHoldings',
+    args: [address],
+    enabled: !!address,
+  });
+
+  // Add effect to process LP holdings data
+  useEffect(() => {
+    if (lpHoldings) {
+      const [tokens, balances] = lpHoldings;
+      const holdings = tokens.map((token, index) => ({
+        address: token,
+        balance: formatUnits(balances[index], 18),
+      })).filter(holding => parseFloat(holding.balance) > 0);
+      setUserLPHoldings(holdings);
+    }
+  }, [lpHoldings]);
+
+  // Add function to check LP token allowance
+  const checkLPTokenAllowance = async (lpTokenAddress, amount) => {
+    if (!lpTokenAddress || !amount) return false;
+    
+    try {
+      const amountBigInt = parseUnits(amount, 18);
+      const allowance = await readContract(config, {
+        address: lpTokenAddress, // Use the LP token address directly
+        abi: CONTRACTS.LPToken.abi,
+        functionName: 'allowance',
+        args: [address, CONTRACTS.PumpMusicSwap.address],
+      });
+      return allowance >= amountBigInt;
+    } catch (err) {
+      console.error('Error checking LP token allowance:', err);
+      return false;
+    }
+  };
+
+  // Add effect to check LP token allowance when amount changes
+  useEffect(() => {
+    const updateLPTokenAllowance = async () => {
+      if (selectedLPToken && lpTokenAmount) {
+        const hasAllowance = await checkLPTokenAllowance(selectedLPToken, lpTokenAmount);
+        setIsLPTokenApproved(hasAllowance);
+      }
+    };
+    updateLPTokenAllowance();
+  }, [selectedLPToken, lpTokenAmount]);
+
+  // Add function to get the LP token address for a given token
+  const getLPTokenAddress = async (tokenAddress) => {
+    try {
+      const lpTokenAddress = await readContract(config, {
+        address: CONTRACTS.PumpMusicSwap.address,
+        abi: CONTRACTS.PumpMusicSwap.abi,
+        functionName: 'lpTokens',
+        args: [tokenAddress],
+      });
+      return lpTokenAddress;
+    } catch (err) {
+      console.error('Error getting LP token address:', err);
+      return null;
+    }
+  };
+
+  // Update handleApproveLPToken to use the correct mapping
+  const handleApproveLPToken = async () => {
+    try {
+      setIsApprovingLPToken(true);
+      
+      // Get the original token from our mapping
+      const originalToken = lpToTokenMap[selectedLPToken];
+      if (!originalToken) {
+        throw new Error('Could not find original token');
+      }
+
+      const amountToApprove = parseUnits(lpTokenAmount, 18);
+      
+      const approveHash = await writeContract({
+        address: selectedLPToken,
+        abi: CONTRACTS.LPToken.abi,
+        functionName: 'approve',
+        args: [CONTRACTS.PumpMusicSwap.address, amountToApprove],
+      });
+      
+      await waitForTransactionReceipt(config, { hash: approveHash });
+      setIsLPTokenApproved(true);
+    } catch (err) {
+      console.error('LP token approval error:', err);
+      setError(err.message || 'Failed to approve LP token');
+    } finally {
+      setIsApprovingLPToken(false);
+    }
+  };
+
+  // Update fetchUserLPHoldings to create both mappings
+  const fetchUserLPHoldings = async () => {
+    try {
+      // Get user's LP holdings
+      const [lpTokens, balances] = await readContract(config, {
+        address: CONTRACTS.PumpMusicSwap.address,
+        abi: CONTRACTS.PumpMusicSwap.abi,
+        functionName: 'getLPTokenHoldings',
+        args: [address],
+      });
+
+      // Get all available tokens
+      const allTokens = await readContract(config, {
+        address: CONTRACTS.TokenFactory.address,
+        abi: CONTRACTS.TokenFactory.abi,
+        functionName: 'getAllTokens',
+      });
+
+      // Create mappings
+      const tokenToLP = {};
+      const lpToToken = {};
+
+      // For each token, get its LP token and create mappings
+      for (const token of allTokens) {
+        const lpToken = await readContract(config, {
+          address: CONTRACTS.PumpMusicSwap.address,
+          abi: CONTRACTS.PumpMusicSwap.abi,
+          functionName: 'lpTokens',
+          args: [token],
+        });
+        
+        if (lpToken !== zeroAddress) { // Use viem's zeroAddress instead of ethers.ZeroAddress
+          tokenToLP[token] = lpToken;
+          lpToToken[lpToken] = token;
+        }
+      }
+
+      setTokenToLPMap(tokenToLP);
+      setLpToTokenMap(lpToToken);
+
+      // Filter and set holdings
+      const holdings = lpTokens
+        .map((lpToken, index) => ({
+          lpToken,
+          originalToken: lpToToken[lpToken],
+          balance: balances[index].toString(),
+        }))
+        .filter(h => BigInt(h.balance) > 0n);
+
+      setUserLPHoldings(holdings);
+
+    } catch (err) {
+      console.error('Error fetching LP holdings:', err);
+      setError('Failed to fetch LP holdings');
+    }
+  };
+
+  // Update handleRemoveLiquidity to use the correct mapping and validation
+  const handleRemoveLiquidity = async () => {
+    if (!selectedLPToken || !lpTokenAmount || !isLPTokenApproved) {
+      setError('Please select LP token, enter amount, and approve first');
+      return;
+    }
+    
+    try {
+      setError('');
+      setIsRemovingLiquidity(true);
+
+      // Get the original token from our mapping
+      const originalToken = lpToTokenMap[selectedLPToken];
+      if (!originalToken) {
+        throw new Error('Could not find original token');
+      }
+
+      const amount = parseUnits(lpTokenAmount, 18);
+      
+      const hash = await writeContract({
+        address: CONTRACTS.PumpMusicSwap.address,
+        abi: CONTRACTS.PumpMusicSwap.abi,
+        functionName: 'removeLiquidity',
+        args: [originalToken, amount],
+      });
+
+      await waitForTransactionReceipt(config, { hash });
+      
+      // Clear form after successful removal
+      setSelectedLPToken('');
+      setLpTokenAmount('');
+      setIsLPTokenApproved(false); // Reset approval state
+      
+      // Refresh LP holdings
+      fetchUserLPHoldings();
+      
+    } catch (err) {
+      console.error('Remove liquidity error:', err);
+      setError(err.message || 'Failed to remove liquidity');
+    } finally {
+      setIsRemovingLiquidity(false);
+    }
+  };
+
+  // Add useEffect to fetch data when component mounts
+  useEffect(() => {
+    if (address && CONTRACTS.PumpMusicSwap.address) {
+      fetchUserLPHoldings();
+    }
+  }, [address, CONTRACTS.PumpMusicSwap.address]);
 
   if (!isConnected) {
     return (
@@ -281,12 +602,16 @@ const SwapTokens = () => {
                                 <SelectValue placeholder="Select token" />
                               </SelectTrigger>
                               <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                                <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <SelectItem 
+                                  key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                  value={CONTRACTS.DAI.address} 
+                                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
                                   DAI
                                 </SelectItem>
                                 {allTokens?.map((token, index) => (
                                   <SelectItem 
-                                    key={token} 
+                                    key={`token-${token}`}  // Added prefix to ensure uniqueness
                                     value={token} 
                                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
@@ -324,12 +649,16 @@ const SwapTokens = () => {
                                 <SelectValue placeholder="Select token" />
                               </SelectTrigger>
                               <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                                <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <SelectItem 
+                                  key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                  value={CONTRACTS.DAI.address} 
+                                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
                                   DAI
                                 </SelectItem>
                                 {allTokens?.map((token, index) => (
                                   <SelectItem 
-                                    key={token} 
+                                    key={`token-${token}`}  // Added prefix to ensure uniqueness
                                     value={token} 
                                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
@@ -348,12 +677,6 @@ const SwapTokens = () => {
                           </div>
                         </div>
                       </div>
-
-                      {error && (
-                        <Alert variant="destructive">
-                          <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                      )}
 
                       <Button
                         className="swap-button"
@@ -400,12 +723,16 @@ const SwapTokens = () => {
                                 <SelectValue placeholder="Select token" />
                               </SelectTrigger>
                               <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                                <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <SelectItem 
+                                  key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                  value={CONTRACTS.DAI.address} 
+                                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
                                   DAI
                                 </SelectItem>
                                 {allTokens?.map((token, index) => (
                                   <SelectItem 
-                                    key={token} 
+                                    key={`token-${token}`}  // Added prefix to ensure uniqueness
                                     value={token} 
                                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
@@ -432,12 +759,16 @@ const SwapTokens = () => {
                                 <SelectValue placeholder="Select token" />
                               </SelectTrigger>
                               <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                                <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <SelectItem 
+                                  key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                  value={CONTRACTS.DAI.address} 
+                                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
                                   DAI
                                 </SelectItem>
                                 {allTokens?.map((token, index) => (
                                   <SelectItem 
-                                    key={token} 
+                                    key={`token-${token}`}  // Added prefix to ensure uniqueness
                                     value={token} 
                                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
@@ -457,44 +788,184 @@ const SwapTokens = () => {
                         </div>
                       </div>
 
-                      {error && (
-                        <Alert variant="destructive" className="bg-red-900/50 border-red-800 text-red-200">
-                          <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                      )}
+                      <div className="space-y-4">
+                        {/* Approval buttons */}
+                        <div className="flex gap-4">
+                          <Button
+                            className="flex-1"
+                            onClick={() => handleApproveToken(fromToken, lpFromAmount, true)}
+                            disabled={!fromToken || !lpFromAmount || firstTokenAllowance || isApprovingFirst}
+                          >
+                            {isApprovingFirst ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Approving First Token...
+                              </>
+                            ) : firstTokenAllowance ? (
+                              <>
+                                <Check className="mr-2 h-4 w-4" />
+                                First Token Approved
+                              </>
+                            ) : (
+                              'Approve First Token'
+                            )}
+                          </Button>
+                          
+                          <Button
+                            className="flex-1"
+                            onClick={() => handleApproveToken(toToken, lpToAmount, false)}
+                            disabled={!toToken || !lpToAmount || secondTokenAllowance || isApprovingSecond}
+                          >
+                            {isApprovingSecond ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Approving Second Token...
+                              </>
+                            ) : secondTokenAllowance ? (
+                              <>
+                                <Check className="mr-2 h-4 w-4" />
+                                Second Token Approved
+                              </>
+                            ) : (
+                              'Approve Second Token'
+                            )}
+                          </Button>
+                        </div>
 
-                      <Button
-                        className="swap-button"
-                        onClick={handleAddLiquidity}
-                        disabled={!fromToken || !toToken || !lpFromAmount || !lpToAmount || isAddingLiquidity}
-                      >
-                        {isAddingLiquidity ? (
-                          <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            Adding Liquidity...
-                          </>
-                        ) : (
-                          'Add Liquidity'
-                        )}
-                      </Button>
+                        {/* Add Liquidity button */}
+                        <Button
+                          className="w-full swap-button"
+                          onClick={handleAddLiquidity}
+                          disabled={
+                            !fromToken || 
+                            !toToken || 
+                            !lpFromAmount || 
+                            !lpToAmount || 
+                            isAddingLiquidity || 
+                            !firstTokenAllowance || 
+                            !secondTokenAllowance
+                          }
+                        >
+                          {isAddingLiquidity ? (
+                            <>
+                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                              Adding Liquidity...
+                            </>
+                          ) : (
+                            'Add Liquidity'
+                          )}
+                        </Button>
+                      </div>
+
+                      {userLPHoldings.length > 0 && (
+                        <div className="space-y-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            Your Liquidity Positions
+                          </h3>
+                          
+                          <div className="space-y-4">
+                            <Select value={selectedLPToken} onValueChange={setSelectedLPToken}>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select LP Token" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {userLPHoldings.map((holding) => (
+                                  <SelectItem key={holding.lpToken} value={holding.lpToken}>
+                                    {`LP Token Balance: ${parseFloat(formatUnits(holding.balance, 18)).toFixed(6)}`}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+
+                            {selectedLPToken && (
+                              <>
+                                <div className="relative">
+                                  <Input
+                                    type="number"
+                                    placeholder="Amount to remove"
+                                    value={lpTokenAmount}
+                                    onChange={(e) => setLpTokenAmount(e.target.value)}
+                                    className="w-full pr-16"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 h-7 text-xs font-medium"
+                                    onClick={() => {
+                                      const selectedHolding = userLPHoldings.find(h => h.lpToken === selectedLPToken);
+                                      if (selectedHolding) {
+                                        // Use the actual balance string instead of parsing/formatting
+                                        setLpTokenAmount(formatUnits(selectedHolding.balance, 18));
+                                      }
+                                    }}
+                                  >
+                                    MAX
+                                  </Button>
+                                </div>
+
+                                <Button
+                                  className="w-full"
+                                  onClick={handleApproveLPToken}
+                                  disabled={!lpTokenAmount || isLPTokenApproved || isApprovingLPToken}
+                                >
+                                  {isApprovingLPToken ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Approving LP Token...
+                                    </>
+                                  ) : isLPTokenApproved ? (
+                                    <>
+                                      <Check className="mr-2 h-4 w-4" />
+                                      LP Token Approved
+                                    </>
+                                  ) : (
+                                    'Approve LP Token'
+                                  )}
+                                </Button>
+
+                                <Button
+                                  variant="destructive"
+                                  className="w-full"
+                                  onClick={handleRemoveLiquidity}
+                                  disabled={!selectedLPToken || !lpTokenAmount || !isLPTokenApproved || isRemovingLiquidity}
+                                >
+                                  {isRemovingLiquidity ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Removing Liquidity...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Remove Liquidity
+                                    </>
+                                  )}
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       <div className="liquidity-info p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                         <h4 className="liquidity-info-title text-black dark:text-white font-bold mb-3 text-lg">
                           Liquidity Provider Benefits
                         </h4>
                         <ul className="liquidity-info-list space-y-3">
-                          <li className="liquidity-info-item flex items-center text-black dark:text-gray-300">
-                            <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
-                            Earn fees from trades in this pool
-                          </li>
-                          <li className="liquidity-info-item flex items-center text-black dark:text-gray-300">
-                            <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
-                            Withdraw your liquidity at any time
-                          </li>
-                          <li className="liquidity-info-item flex items-center text-black dark:text-gray-300">
-                            <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
-                            Support the ecosystem's liquidity
-                          </li>
+                          {[
+                            { id: 'fees', text: 'Earn fees from trades in this pool' },
+                            { id: 'withdraw', text: 'Withdraw your liquidity at any time' },
+                            { id: 'support', text: 'Support the ecosystem\'s liquidity' }
+                          ].map(item => (
+                            <li 
+                              key={item.id} 
+                              className="liquidity-info-item flex items-center text-black dark:text-gray-300"
+                            >
+                              <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
+                              {item.text}
+                            </li>
+                          ))}
                         </ul>
                       </div>
                     </div>
@@ -553,12 +1024,16 @@ const SwapTokens = () => {
                                 <SelectValue placeholder="Select token" />
                               </SelectTrigger>
                               <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                                <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <SelectItem 
+                                  key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                  value={CONTRACTS.DAI.address} 
+                                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
                                   DAI
                                 </SelectItem>
                                 {allTokens?.map((token, index) => (
                                   <SelectItem 
-                                    key={token} 
+                                    key={`token-${token}`}  // Added prefix to ensure uniqueness
                                     value={token} 
                                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
@@ -596,12 +1071,16 @@ const SwapTokens = () => {
                                 <SelectValue placeholder="Select token" />
                               </SelectTrigger>
                               <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                                <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <SelectItem 
+                                  key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                  value={CONTRACTS.DAI.address} 
+                                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
                                   DAI
                                 </SelectItem>
                                 {allTokens?.map((token, index) => (
                                   <SelectItem 
-                                    key={token} 
+                                    key={`token-${token}`}  // Added prefix to ensure uniqueness
                                     value={token} 
                                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
@@ -620,12 +1099,6 @@ const SwapTokens = () => {
                           </div>
                         </div>
                       </div>
-
-                      {error && (
-                        <Alert variant="destructive">
-                          <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                      )}
 
                       <Button
                         className="swap-button"
@@ -672,12 +1145,16 @@ const SwapTokens = () => {
                                 <SelectValue placeholder="Select token" />
                               </SelectTrigger>
                               <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                                <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <SelectItem 
+                                  key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                  value={CONTRACTS.DAI.address} 
+                                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
                                   DAI
                                 </SelectItem>
                                 {allTokens?.map((token, index) => (
                                   <SelectItem 
-                                    key={token} 
+                                    key={`token-${token}`}  // Added prefix to ensure uniqueness
                                     value={token} 
                                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
@@ -704,12 +1181,16 @@ const SwapTokens = () => {
                                 <SelectValue placeholder="Select token" />
                               </SelectTrigger>
                               <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                                <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <SelectItem 
+                                  key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                  value={CONTRACTS.DAI.address} 
+                                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
                                   DAI
                                 </SelectItem>
                                 {allTokens?.map((token, index) => (
                                   <SelectItem 
-                                    key={token} 
+                                    key={`token-${token}`}  // Added prefix to ensure uniqueness
                                     value={token} 
                                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
@@ -729,44 +1210,184 @@ const SwapTokens = () => {
                         </div>
                       </div>
 
-                      {error && (
-                        <Alert variant="destructive" className="bg-red-900/50 border-red-800 text-red-200">
-                          <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                      )}
+                      <div className="space-y-4">
+                        {/* Approval buttons */}
+                        <div className="flex gap-4">
+                          <Button
+                            className="flex-1"
+                            onClick={() => handleApproveToken(fromToken, lpFromAmount, true)}
+                            disabled={!fromToken || !lpFromAmount || firstTokenAllowance || isApprovingFirst}
+                          >
+                            {isApprovingFirst ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Approving First Token...
+                              </>
+                            ) : firstTokenAllowance ? (
+                              <>
+                                <Check className="mr-2 h-4 w-4" />
+                                First Token Approved
+                              </>
+                            ) : (
+                              'Approve First Token'
+                            )}
+                          </Button>
+                          
+                          <Button
+                            className="flex-1"
+                            onClick={() => handleApproveToken(toToken, lpToAmount, false)}
+                            disabled={!toToken || !lpToAmount || secondTokenAllowance || isApprovingSecond}
+                          >
+                            {isApprovingSecond ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Approving Second Token...
+                              </>
+                            ) : secondTokenAllowance ? (
+                              <>
+                                <Check className="mr-2 h-4 w-4" />
+                                Second Token Approved
+                              </>
+                            ) : (
+                              'Approve Second Token'
+                            )}
+                          </Button>
+                        </div>
 
-                      <Button
-                        className="swap-button"
-                        onClick={handleAddLiquidity}
-                        disabled={!fromToken || !toToken || !lpFromAmount || !lpToAmount || isAddingLiquidity}
-                      >
-                        {isAddingLiquidity ? (
-                          <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            Adding Liquidity...
-                          </>
-                        ) : (
-                          'Add Liquidity'
-                        )}
-                      </Button>
+                        {/* Add Liquidity button */}
+                        <Button
+                          className="w-full swap-button"
+                          onClick={handleAddLiquidity}
+                          disabled={
+                            !fromToken || 
+                            !toToken || 
+                            !lpFromAmount || 
+                            !lpToAmount || 
+                            isAddingLiquidity || 
+                            !firstTokenAllowance || 
+                            !secondTokenAllowance
+                          }
+                        >
+                          {isAddingLiquidity ? (
+                            <>
+                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                              Adding Liquidity...
+                            </>
+                          ) : (
+                            'Add Liquidity'
+                          )}
+                        </Button>
+                      </div>
+
+                      {userLPHoldings.length > 0 && (
+                        <div className="space-y-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            Your Liquidity Positions
+                          </h3>
+                          
+                          <div className="space-y-4">
+                            <Select value={selectedLPToken} onValueChange={setSelectedLPToken}>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select LP Token" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {userLPHoldings.map((holding) => (
+                                  <SelectItem key={holding.lpToken} value={holding.lpToken}>
+                                    {`LP Token Balance: ${parseFloat(formatUnits(holding.balance, 18)).toFixed(6)}`}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+
+                            {selectedLPToken && (
+                              <>
+                                <div className="relative">
+                                  <Input
+                                    type="number"
+                                    placeholder="Amount to remove"
+                                    value={lpTokenAmount}
+                                    onChange={(e) => setLpTokenAmount(e.target.value)}
+                                    className="w-full pr-16"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 h-7 text-xs font-medium"
+                                    onClick={() => {
+                                      const selectedHolding = userLPHoldings.find(h => h.lpToken === selectedLPToken);
+                                      if (selectedHolding) {
+                                        // Use the actual balance string instead of parsing/formatting
+                                        setLpTokenAmount(formatUnits(selectedHolding.balance, 18));
+                                      }
+                                    }}
+                                  >
+                                    MAX
+                                  </Button>
+                                </div>
+
+                                <Button
+                                  className="w-full"
+                                  onClick={handleApproveLPToken}
+                                  disabled={!lpTokenAmount || isLPTokenApproved || isApprovingLPToken}
+                                >
+                                  {isApprovingLPToken ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Approving LP Token...
+                                    </>
+                                  ) : isLPTokenApproved ? (
+                                    <>
+                                      <Check className="mr-2 h-4 w-4" />
+                                      LP Token Approved
+                                    </>
+                                  ) : (
+                                    'Approve LP Token'
+                                  )}
+                                </Button>
+
+                                <Button
+                                  variant="destructive"
+                                  className="w-full"
+                                  onClick={handleRemoveLiquidity}
+                                  disabled={!selectedLPToken || !lpTokenAmount || !isLPTokenApproved || isRemovingLiquidity}
+                                >
+                                  {isRemovingLiquidity ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Removing Liquidity...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Remove Liquidity
+                                    </>
+                                  )}
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       <div className="liquidity-info p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                         <h4 className="liquidity-info-title text-black dark:text-white font-bold mb-3 text-lg">
                           Liquidity Provider Benefits
                         </h4>
                         <ul className="liquidity-info-list space-y-3">
-                          <li className="liquidity-info-item flex items-center text-black dark:text-gray-300">
-                            <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
-                            Earn fees from trades in this pool
-                          </li>
-                          <li className="liquidity-info-item flex items-center text-black dark:text-gray-300">
-                            <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
-                            Withdraw your liquidity at any time
-                          </li>
-                          <li className="liquidity-info-item flex items-center text-black dark:text-gray-300">
-                            <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
-                            Support the ecosystem's liquidity
-                          </li>
+                          {[
+                            { id: 'fees', text: 'Earn fees from trades in this pool' },
+                            { id: 'withdraw', text: 'Withdraw your liquidity at any time' },
+                            { id: 'support', text: 'Support the ecosystem\'s liquidity' }
+                          ].map(item => (
+                            <li 
+                              key={item.id} 
+                              className="liquidity-info-item flex items-center text-black dark:text-gray-300"
+                            >
+                              <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
+                              {item.text}
+                            </li>
+                          ))}
                         </ul>
                       </div>
                     </div>
@@ -825,12 +1446,16 @@ const SwapTokens = () => {
                                 <SelectValue placeholder="Select token" />
                               </SelectTrigger>
                               <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                                <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <SelectItem 
+                                  key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                  value={CONTRACTS.DAI.address} 
+                                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
                                   DAI
                                 </SelectItem>
                                 {allTokens?.map((token, index) => (
                                   <SelectItem 
-                                    key={token} 
+                                    key={`token-${token}`}  // Added prefix to ensure uniqueness
                                     value={token} 
                                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
@@ -868,12 +1493,16 @@ const SwapTokens = () => {
                                 <SelectValue placeholder="Select token" />
                               </SelectTrigger>
                               <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                                <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <SelectItem 
+                                  key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                  value={CONTRACTS.DAI.address} 
+                                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
                                   DAI
                                 </SelectItem>
                                 {allTokens?.map((token, index) => (
                                   <SelectItem 
-                                    key={token} 
+                                    key={`token-${token}`}  // Added prefix to ensure uniqueness
                                     value={token} 
                                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
@@ -892,12 +1521,6 @@ const SwapTokens = () => {
                           </div>
                         </div>
                       </div>
-
-                      {error && (
-                        <Alert variant="destructive">
-                          <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                      )}
 
                       <Button
                         className="swap-button"
@@ -944,12 +1567,16 @@ const SwapTokens = () => {
                                 <SelectValue placeholder="Select token" />
                               </SelectTrigger>
                               <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                                <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <SelectItem 
+                                  key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                  value={CONTRACTS.DAI.address} 
+                                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
                                   DAI
                                 </SelectItem>
                                 {allTokens?.map((token, index) => (
                                   <SelectItem 
-                                    key={token} 
+                                    key={`token-${token}`}  // Added prefix to ensure uniqueness
                                     value={token} 
                                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
@@ -976,12 +1603,16 @@ const SwapTokens = () => {
                                 <SelectValue placeholder="Select token" />
                               </SelectTrigger>
                               <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                                <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <SelectItem 
+                                  key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                  value={CONTRACTS.DAI.address} 
+                                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
                                   DAI
                                 </SelectItem>
                                 {allTokens?.map((token, index) => (
                                   <SelectItem 
-                                    key={token} 
+                                    key={`token-${token}`}  // Added prefix to ensure uniqueness
                                     value={token} 
                                     className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
@@ -1001,44 +1632,184 @@ const SwapTokens = () => {
                         </div>
                       </div>
 
-                      {error && (
-                        <Alert variant="destructive" className="bg-red-900/50 border-red-800 text-red-200">
-                          <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                      )}
+                      <div className="space-y-4">
+                        {/* Approval buttons */}
+                        <div className="flex gap-4">
+                          <Button
+                            className="flex-1"
+                            onClick={() => handleApproveToken(fromToken, lpFromAmount, true)}
+                            disabled={!fromToken || !lpFromAmount || firstTokenAllowance || isApprovingFirst}
+                          >
+                            {isApprovingFirst ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Approving First Token...
+                              </>
+                            ) : firstTokenAllowance ? (
+                              <>
+                                <Check className="mr-2 h-4 w-4" />
+                                First Token Approved
+                              </>
+                            ) : (
+                              'Approve First Token'
+                            )}
+                          </Button>
+                          
+                          <Button
+                            className="flex-1"
+                            onClick={() => handleApproveToken(toToken, lpToAmount, false)}
+                            disabled={!toToken || !lpToAmount || secondTokenAllowance || isApprovingSecond}
+                          >
+                            {isApprovingSecond ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Approving Second Token...
+                              </>
+                            ) : secondTokenAllowance ? (
+                              <>
+                                <Check className="mr-2 h-4 w-4" />
+                                Second Token Approved
+                              </>
+                            ) : (
+                              'Approve Second Token'
+                            )}
+                          </Button>
+                        </div>
 
-                      <Button
-                        className="swap-button"
-                        onClick={handleAddLiquidity}
-                        disabled={!fromToken || !toToken || !lpFromAmount || !lpToAmount || isAddingLiquidity}
-                      >
-                        {isAddingLiquidity ? (
-                          <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            Adding Liquidity...
-                          </>
-                        ) : (
-                          'Add Liquidity'
-                        )}
-                      </Button>
+                        {/* Add Liquidity button */}
+                        <Button
+                          className="w-full swap-button"
+                          onClick={handleAddLiquidity}
+                          disabled={
+                            !fromToken || 
+                            !toToken || 
+                            !lpFromAmount || 
+                            !lpToAmount || 
+                            isAddingLiquidity || 
+                            !firstTokenAllowance || 
+                            !secondTokenAllowance
+                          }
+                        >
+                          {isAddingLiquidity ? (
+                            <>
+                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                              Adding Liquidity...
+                            </>
+                          ) : (
+                            'Add Liquidity'
+                          )}
+                        </Button>
+                      </div>
+
+                      {userLPHoldings.length > 0 && (
+                        <div className="space-y-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            Your Liquidity Positions
+                          </h3>
+                          
+                          <div className="space-y-4">
+                            <Select value={selectedLPToken} onValueChange={setSelectedLPToken}>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select LP Token" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {userLPHoldings.map((holding) => (
+                                  <SelectItem key={holding.lpToken} value={holding.lpToken}>
+                                    {`LP Token Balance: ${parseFloat(formatUnits(holding.balance, 18)).toFixed(6)}`}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+
+                            {selectedLPToken && (
+                              <>
+                                <div className="relative">
+                                  <Input
+                                    type="number"
+                                    placeholder="Amount to remove"
+                                    value={lpTokenAmount}
+                                    onChange={(e) => setLpTokenAmount(e.target.value)}
+                                    className="w-full pr-16"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 h-7 text-xs font-medium"
+                                    onClick={() => {
+                                      const selectedHolding = userLPHoldings.find(h => h.lpToken === selectedLPToken);
+                                      if (selectedHolding) {
+                                        // Use the actual balance string instead of parsing/formatting
+                                        setLpTokenAmount(formatUnits(selectedHolding.balance, 18));
+                                      }
+                                    }}
+                                  >
+                                    MAX
+                                  </Button>
+                                </div>
+
+                                <Button
+                                  className="w-full"
+                                  onClick={handleApproveLPToken}
+                                  disabled={!lpTokenAmount || isLPTokenApproved || isApprovingLPToken}
+                                >
+                                  {isApprovingLPToken ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Approving LP Token...
+                                    </>
+                                  ) : isLPTokenApproved ? (
+                                    <>
+                                      <Check className="mr-2 h-4 w-4" />
+                                      LP Token Approved
+                                    </>
+                                  ) : (
+                                    'Approve LP Token'
+                                  )}
+                                </Button>
+
+                                <Button
+                                  variant="destructive"
+                                  className="w-full"
+                                  onClick={handleRemoveLiquidity}
+                                  disabled={!selectedLPToken || !lpTokenAmount || !isLPTokenApproved || isRemovingLiquidity}
+                                >
+                                  {isRemovingLiquidity ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Removing Liquidity...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Remove Liquidity
+                                    </>
+                                  )}
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       <div className="liquidity-info p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                         <h4 className="liquidity-info-title text-black dark:text-white font-bold mb-3 text-lg">
                           Liquidity Provider Benefits
                         </h4>
                         <ul className="liquidity-info-list space-y-3">
-                          <li className="liquidity-info-item flex items-center text-black dark:text-gray-300">
-                            <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
-                            Earn fees from trades in this pool
-                          </li>
-                          <li className="liquidity-info-item flex items-center text-black dark:text-gray-300">
-                            <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
-                            Withdraw your liquidity at any time
-                          </li>
-                          <li className="liquidity-info-item flex items-center text-black dark:text-gray-300">
-                            <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
-                            Support the ecosystem's liquidity
-                          </li>
+                          {[
+                            { id: 'fees', text: 'Earn fees from trades in this pool' },
+                            { id: 'withdraw', text: 'Withdraw your liquidity at any time' },
+                            { id: 'support', text: 'Support the ecosystem\'s liquidity' }
+                          ].map(item => (
+                            <li 
+                              key={item.id} 
+                              className="liquidity-info-item flex items-center text-black dark:text-gray-300"
+                            >
+                              <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
+                              {item.text}
+                            </li>
+                          ))}
                         </ul>
                       </div>
                     </div>
@@ -1096,12 +1867,16 @@ const SwapTokens = () => {
                               <SelectValue placeholder="Select token" />
                             </SelectTrigger>
                             <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                              <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                              <SelectItem 
+                                key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                value={CONTRACTS.DAI.address} 
+                                className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                              >
                                 DAI
                               </SelectItem>
                               {allTokens?.map((token, index) => (
                                 <SelectItem 
-                                  key={token} 
+                                  key={`token-${token}`}  // Added prefix to ensure uniqueness
                                   value={token} 
                                   className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                 >
@@ -1139,12 +1914,16 @@ const SwapTokens = () => {
                               <SelectValue placeholder="Select token" />
                             </SelectTrigger>
                             <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                              <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                              <SelectItem 
+                                key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                value={CONTRACTS.DAI.address} 
+                                className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                              >
                                 DAI
                               </SelectItem>
                               {allTokens?.map((token, index) => (
                                 <SelectItem 
-                                  key={token} 
+                                  key={`token-${token}`}  // Added prefix to ensure uniqueness
                                   value={token} 
                                   className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                 >
@@ -1163,12 +1942,6 @@ const SwapTokens = () => {
                         </div>
                       </div>
                     </div>
-
-                    {error && (
-                      <Alert variant="destructive">
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                    )}
 
                     <Button
                       className="swap-button"
@@ -1215,12 +1988,16 @@ const SwapTokens = () => {
                               <SelectValue placeholder="Select token" />
                             </SelectTrigger>
                             <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                              <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                              <SelectItem 
+                                key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                value={CONTRACTS.DAI.address} 
+                                className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                              >
                                 DAI
                               </SelectItem>
                               {allTokens?.map((token, index) => (
                                 <SelectItem 
-                                  key={token} 
+                                  key={`token-${token}`}  // Added prefix to ensure uniqueness
                                   value={token} 
                                   className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                 >
@@ -1247,12 +2024,16 @@ const SwapTokens = () => {
                               <SelectValue placeholder="Select token" />
                             </SelectTrigger>
                             <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                              <SelectItem value={CONTRACTS.DAI.address} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                              <SelectItem 
+                                key="dai"  // Changed from CONTRACTS.DAI.address to ensure uniqueness
+                                value={CONTRACTS.DAI.address} 
+                                className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                              >
                                 DAI
                               </SelectItem>
                               {allTokens?.map((token, index) => (
                                 <SelectItem 
-                                  key={token} 
+                                  key={`token-${token}`}  // Added prefix to ensure uniqueness
                                   value={token} 
                                   className="hover:bg-gray-100 dark:hover:bg-gray-700"
                                 >
@@ -1272,44 +2053,184 @@ const SwapTokens = () => {
                       </div>
                     </div>
 
-                    {error && (
-                      <Alert variant="destructive" className="bg-red-900/50 border-red-800 text-red-200">
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                    )}
+                    <div className="space-y-4">
+                      {/* Approval buttons */}
+                      <div className="flex gap-4">
+                        <Button
+                          className="flex-1"
+                          onClick={() => handleApproveToken(fromToken, lpFromAmount, true)}
+                          disabled={!fromToken || !lpFromAmount || firstTokenAllowance || isApprovingFirst}
+                        >
+                          {isApprovingFirst ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Approving First Token...
+                            </>
+                          ) : firstTokenAllowance ? (
+                            <>
+                              <Check className="mr-2 h-4 w-4" />
+                              First Token Approved
+                            </>
+                          ) : (
+                            'Approve First Token'
+                          )}
+                        </Button>
+                        
+                        <Button
+                          className="flex-1"
+                          onClick={() => handleApproveToken(toToken, lpToAmount, false)}
+                          disabled={!toToken || !lpToAmount || secondTokenAllowance || isApprovingSecond}
+                        >
+                          {isApprovingSecond ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Approving Second Token...
+                            </>
+                          ) : secondTokenAllowance ? (
+                            <>
+                              <Check className="mr-2 h-4 w-4" />
+                              Second Token Approved
+                            </>
+                          ) : (
+                            'Approve Second Token'
+                          )}
+                        </Button>
+                      </div>
 
-                    <Button
-                      className="swap-button"
-                      onClick={handleAddLiquidity}
-                      disabled={!fromToken || !toToken || !lpFromAmount || !lpToAmount || isAddingLiquidity}
-                    >
-                      {isAddingLiquidity ? (
-                        <>
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          Adding Liquidity...
-                        </>
-                      ) : (
-                        'Add Liquidity'
-                      )}
-                    </Button>
+                      {/* Add Liquidity button */}
+                      <Button
+                        className="w-full swap-button"
+                        onClick={handleAddLiquidity}
+                        disabled={
+                          !fromToken || 
+                          !toToken || 
+                          !lpFromAmount || 
+                          !lpToAmount || 
+                          isAddingLiquidity || 
+                          !firstTokenAllowance || 
+                          !secondTokenAllowance
+                        }
+                      >
+                        {isAddingLiquidity ? (
+                          <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Adding Liquidity...
+                          </>
+                        ) : (
+                          'Add Liquidity'
+                        )}
+                      </Button>
+                    </div>
+
+                    {userLPHoldings.length > 0 && (
+                      <div className="space-y-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          Your Liquidity Positions
+                        </h3>
+                        
+                        <div className="space-y-4">
+                          <Select value={selectedLPToken} onValueChange={setSelectedLPToken}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select LP Token" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {userLPHoldings.map((holding) => (
+                                <SelectItem key={holding.lpToken} value={holding.lpToken}>
+                                  {`LP Token Balance: ${parseFloat(formatUnits(holding.balance, 18)).toFixed(6)}`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          {selectedLPToken && (
+                            <>
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  placeholder="Amount to remove"
+                                  value={lpTokenAmount}
+                                  onChange={(e) => setLpTokenAmount(e.target.value)}
+                                  className="w-full pr-16"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 text-xs font-medium"
+                                  onClick={() => {
+                                    const selectedHolding = userLPHoldings.find(h => h.lpToken === selectedLPToken);
+                                    if (selectedHolding) {
+                                      // Use the actual balance string instead of parsing/formatting
+                                      setLpTokenAmount(formatUnits(selectedHolding.balance, 18));
+                                    }
+                                  }}
+                                >
+                                  MAX
+                                </Button>
+                              </div>
+
+                              <Button
+                                className="w-full"
+                                onClick={handleApproveLPToken}
+                                disabled={!lpTokenAmount || isLPTokenApproved || isApprovingLPToken}
+                              >
+                                {isApprovingLPToken ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Approving LP Token...
+                                  </>
+                                ) : isLPTokenApproved ? (
+                                  <>
+                                    <Check className="mr-2 h-4 w-4" />
+                                    LP Token Approved
+                                  </>
+                                ) : (
+                                  'Approve LP Token'
+                                )}
+                              </Button>
+
+                              <Button
+                                variant="destructive"
+                                className="w-full"
+                                onClick={handleRemoveLiquidity}
+                                disabled={!selectedLPToken || !lpTokenAmount || !isLPTokenApproved || isRemovingLiquidity}
+                              >
+                                {isRemovingLiquidity ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Removing Liquidity...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Remove Liquidity
+                                  </>
+                                )}
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="liquidity-info p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                       <h4 className="liquidity-info-title text-black dark:text-white font-bold mb-3 text-lg">
                         Liquidity Provider Benefits
                       </h4>
                       <ul className="liquidity-info-list space-y-3">
-                        <li className="liquidity-info-item flex items-center text-black dark:text-gray-300">
-                          <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
-                          Earn fees from trades in this pool
-                        </li>
-                        <li className="liquidity-info-item flex items-center text-black dark:text-gray-300">
-                          <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
-                          Withdraw your liquidity at any time
-                        </li>
-                        <li className="liquidity-info-item flex items-center text-black dark:text-gray-300">
-                          <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
-                          Support the ecosystem's liquidity
-                        </li>
+                        {[
+                          { id: 'fees', text: 'Earn fees from trades in this pool' },
+                          { id: 'withdraw', text: 'Withdraw your liquidity at any time' },
+                          { id: 'support', text: 'Support the ecosystem\'s liquidity' }
+                        ].map(item => (
+                          <li 
+                            key={item.id} 
+                            className="liquidity-info-item flex items-center text-black dark:text-gray-300"
+                          >
+                            <div className="liquidity-info-bullet w-2 h-2 rounded-full bg-indigo-600 mr-2" />
+                            {item.text}
+                          </li>
+                        ))}
                       </ul>
                     </div>
                   </div>
