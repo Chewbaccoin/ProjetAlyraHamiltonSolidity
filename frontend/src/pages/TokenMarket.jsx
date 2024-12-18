@@ -121,6 +121,7 @@ const TokenMarket = () => {
   const [isApproving, setIsApproving] = useState(false);
   const [dialogMessage, setDialogMessage] = useState({ type: '', content: '' });
   const [showOnlyAvailable, setShowOnlyAvailable] = useState(false);
+  const [currentAllowance, setCurrentAllowance] = useState(0n);
 
   const config = useConfig();
   const { writeContract } = useWriteContract();
@@ -130,6 +131,23 @@ const TokenMarket = () => {
     abi: CONTRACTS?.TokenFactory?.abi,
     functionName: 'getAllTokens',
   });
+
+  useEffect(() => {
+    const updateAllowance = async () => {
+      if (!selectedToken?.address || !address) return;
+      
+      const allowance = await readContract(config, {
+        address: CONTRACTS.DAI.address,
+        abi: CONTRACTS.DAI.abi,
+        functionName: 'allowance',
+        args: [address, selectedToken.address],
+      });
+      
+      setCurrentAllowance(allowance);
+    };
+
+    updateAllowance();
+  }, [selectedToken?.address, address, purchaseAmount]);
 
   const handleBuyTokens = async () => {
     if (!selectedToken?.address || !purchaseAmount || isNaN(purchaseAmount) || parseFloat(purchaseAmount) <= 0) return;
@@ -157,14 +175,15 @@ const TokenMarket = () => {
         args: [address, selectedToken.address],
       });
       
+      setCurrentAllowance(allowance);
+
       if (allowance < totalCost) {
         setIsApproving(true);
-        const maxUint256 = BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
         const approveHash = await writeContract({
           address: CONTRACTS.DAI.address,
           abi: CONTRACTS.DAI.abi,
           functionName: 'approve',
-          args: [selectedToken.address, maxUint256],
+          args: [selectedToken.address, totalCost],
         });
         await waitForTransactionReceipt(config, { hash: approveHash });
         setIsApproving(false);
@@ -192,6 +211,12 @@ const TokenMarket = () => {
     } finally {
       setIsPurchasing(false);
     }
+  };
+
+  const shouldShowConfirmPurchase = () => {
+    if (!purchaseAmount || !selectedToken?.price) return false;
+    const totalCost = (parseUnits(purchaseAmount, 18) * BigInt(selectedToken.price)) / parseUnits('1', 18);
+    return currentAllowance >= totalCost;
   };
 
   return (
@@ -300,7 +325,7 @@ const TokenMarket = () => {
                     ? 'Processing...' 
                     : isApproving 
                       ? 'Approving...' 
-                      : dialogMessage.type === 'success' && dialogMessage.content.includes('approval')
+                      : shouldShowConfirmPurchase()
                         ? 'Confirm Purchase'
                         : 'Approve DAI'}
                 </Button>
