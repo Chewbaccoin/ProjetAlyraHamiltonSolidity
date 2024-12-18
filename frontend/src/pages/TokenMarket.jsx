@@ -87,15 +87,15 @@ const TokenCard = ({ tokenAddress, searchTerm, showOnlyAvailable, onBuyClick }) 
           <span>{tokenRoyaltyInfo ? `${(Number(tokenRoyaltyInfo[1]) / 100).toFixed(2)}%` : "N/A"}</span>
         </div>
         <div className="flex justify-between" title="Total number of tokens that exist for this royalty token">
-          <span>Total Supply</span>
+          <span className="border-b border-dashed">Total Supply</span>
           <span>{totalSupply ? formatUnits(totalSupply, 18) : "N/A"}</span>
         </div>
         <div className="flex justify-between" title="Number of tokens currently held by other users">
-          <span>Circulating Supply</span>
+          <span className="border-b border-dashed">Circulating Supply</span>
           <span>{circulatingSupply}</span>
         </div>
         <div className="flex justify-between" title="Number of tokens available for purchase">
-          <span>Available Supply</span>
+          <span className="border-b border-dashed">Available Supply</span>
           <span>{availableSupply ? formatUnits(availableSupply, 18) : "N/A"}</span>
         </div>
       </div>
@@ -261,20 +261,31 @@ const TokenMarket = () => {
               </DialogHeader>
               
               <div className="py-4">
-                <Input
-                  type="number"
-                  value={purchaseAmount}
-                  onChange={(e) => setPurchaseAmount(e.target.value)}
-                  min="0"
-                  step="0.000001"
-                />
-                {dialogMessage.content && (
-                  <div className={`mt-4 p-3 rounded ${
-                    dialogMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                  }`}>
-                    {dialogMessage.content}
-                  </div>
-                )}
+                <div className="space-y-4">
+                  <Input
+                    type="number"
+                    value={purchaseAmount}
+                    onChange={(e) => setPurchaseAmount(e.target.value)}
+                    min="0"
+                    step="0.000001"
+                    placeholder="Enter amount of tokens"
+                  />
+                  <Input
+                    type="text"
+                    value={`Total cost: ${purchaseAmount && selectedToken?.price 
+                      ? `${formatUnits(BigInt(purchaseAmount) * BigInt(selectedToken.price), 18)} DAI`
+                      : '0 DAI'}`}
+                    disabled
+                    placeholder="Total cost in DAI"
+                  />
+                  {dialogMessage.content && (
+                    <div className={`mt-4 p-3 rounded ${
+                      dialogMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {dialogMessage.content}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <DialogFooter>
@@ -285,7 +296,13 @@ const TokenMarket = () => {
                   onClick={handleBuyTokens}
                   disabled={!purchaseAmount || isPurchasing || isApproving}
                 >
-                  {isPurchasing ? 'Processing...' : isApproving ? 'Approving...' : 'Confirm Purchase'}
+                  {isPurchasing 
+                    ? 'Processing...' 
+                    : isApproving 
+                      ? 'Approving...' 
+                      : dialogMessage.type === 'success' && dialogMessage.content.includes('approval')
+                        ? 'Confirm Purchase'
+                        : 'Approve DAI'}
                 </Button>
               </DialogFooter>
             </DialogContent>

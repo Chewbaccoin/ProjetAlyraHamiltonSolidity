@@ -584,3 +584,75 @@ select:focus {
   @apply ring-gray-500 border-gray-500;
 }
 
+/* Dashboard specific styles */
+.dashboard-stats-grid {
+  @apply grid grid-cols-3 gap-6;
+}
+
+.dashboard-stat-card {
+  @apply flex items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-xl 
+         border border-gray-200 dark:border-gray-700 shadow-sm;
+}
+
+.dashboard-token-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+.dashboard-empty-state {
+  @apply text-center py-12 bg-white dark:bg-gray-800 rounded-xl 
+         border border-gray-200 dark:border-gray-700;
+}
+
+.dashboard-empty-icon {
+  @apply mx-auto h-12 w-12 text-gray-400;
+}
+
+.dashboard-empty-title {
+  @apply mt-4 text-lg font-medium text-gray-900 dark:text-white;
+}
+
+.dashboard-empty-description {
+  @apply mt-2 text-gray-500 dark:text-gray-400;
+}
+
+.dashboard-loading {
+  @apply flex items-center justify-center py-12;
+}
+
+.dashboard-loading-icon {
+  @apply w-8 h-8 animate-spin text-purple-500;
+}
+
+.token-card {
+  @apply bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md 
+         transition-all border border-gray-200 dark:border-gray-700;
+}
+
+.token-card-header {
+  @apply flex justify-between items-start mb-4;
+}
+
+.token-card-title {
+  @apply text-lg font-semibold text-gray-900 dark:text-white;
+}
+
+.token-card-symbol {
+  @apply text-sm text-gray-500 dark:text-gray-400;
+}
+
+.token-card-grid {
+  @apply grid grid-cols-2 gap-4;
+}
+
+.token-card-stat {
+  @apply bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg;
+}
+
+.token-card-stat-label {
+  @apply text-sm text-gray-500 dark:text-gray-400;
+}
+
+.token-card-stat-value {
+  @apply text-lg font-semibold text-gray-900 dark:text-white;
+}
+

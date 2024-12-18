@@ -175,13 +175,13 @@ const TokenCard = ({ tokenAddress, isArtistView }) => {
   const isButtonDisabled = isClaimingRoyalties || isTransactionPending;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-      <div className="flex justify-between items-start mb-4">
+    <div className="token-card">
+      <div className="token-card-header">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="token-card-title">
             {tokenName || "Loading..."}
           </h3>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+          <span className="token-card-symbol">
             ${tokenSymbol || "..."}
           </span>
         </div>
@@ -198,30 +198,30 @@ const TokenCard = ({ tokenAddress, isArtistView }) => {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
-          <div className="text-sm text-gray-500 dark:text-gray-400">Price</div>
-          <div className="text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="token-card-grid">
+        <div className="token-card-stat">
+          <div className="token-card-stat-label">Price</div>
+          <div className="token-card-stat-value">
             {tokenPrice ? `${(Number(tokenPrice) / 1e18).toFixed(8)} DAI` : "N/A"}
           </div>
         </div>
-        <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
-          <div className="text-sm text-gray-500 dark:text-gray-400">Royalty Rate</div>
-          <div className="text-lg font-semibold text-gray-900 dark:text-white">
+        <div className="token-card-stat">
+          <div className="token-card-stat-label">Royalty Rate</div>
+          <div className="token-card-stat-value">
             {formatRoyaltyPercentage(royaltyInfo)}
           </div>
         </div>
         {isArtistView && (
           <>
-            <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
-              <div className="text-sm text-gray-500 dark:text-gray-400">Token Holders</div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-white">
+            <div className="token-card-stat">
+              <div className="token-card-stat-label">Token Holders</div>
+              <div className="token-card-stat-value">
                 {totalHolders ? Number(totalHolders).toString() : "0"}
               </div>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
-              <div className="text-sm text-gray-500 dark:text-gray-400">Amount Raised</div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-white">
+            <div className="token-card-stat">
+              <div className="token-card-stat-label">Amount Raised</div>
+              <div className="token-card-stat-value">
                 {amountRaised 
                   ? `${Number(formatEther(amountRaised)).toFixed(2)} DAI`
                   : "0.00 DAI"}
@@ -229,15 +229,15 @@ const TokenCard = ({ tokenAddress, isArtistView }) => {
             </div>
           </>
         )}
-        <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg col-span-2">
-          <div className="text-sm text-gray-500 dark:text-gray-400">Royalties Expiration</div>
-          <div className="text-lg font-semibold text-gray-900 dark:text-white">
+        <div className="token-card-stat col-span-2">
+          <div className="token-card-stat-label">Royalties Expiration</div>
+          <div className="token-card-stat-value">
             {formatExpirationDate(royaltyInfo)}
           </div>
         </div>
-        <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg col-span-2">
-          <div className="text-sm text-gray-500 dark:text-gray-400">Status</div>
-          <div className="text-lg font-semibold text-gray-900 dark:text-white text-center">
+        <div className="token-card-stat col-span-2">
+          <div className="token-card-stat-label">Status</div>
+          <div className="token-card-stat-value text-center">
             {isListedForSale ? (
               <span className="text-green-500">Listed for sale</span>
             ) : (
@@ -247,15 +247,15 @@ const TokenCard = ({ tokenAddress, isArtistView }) => {
         </div>
         {!isArtistView && (
           <>
-            <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
-              <div className="text-sm text-gray-500 dark:text-gray-400">Tokens Owned</div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-white">
+            <div className="token-card-stat">
+              <div className="token-card-stat-label">Tokens Owned</div>
+              <div className="token-card-stat-value">
                 {formattedBalance.toFixed(2)}
               </div>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
-              <div className="text-sm text-gray-500 dark:text-gray-400">Owning Value</div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-white">
+            <div className="token-card-stat">
+              <div className="token-card-stat-label">Owning Value</div>
+              <div className="token-card-stat-value">
                 {`${owningValue} DAI`}
               </div>
             </div>
@@ -354,9 +354,9 @@ const ArtistDashboard = () => {
   }, 0) || 0;
 
   return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-3 gap-6">
-        <div className="stat-card">
+    <div className="section-spacing">
+      <div className="dashboard-stats-grid">
+        <div className="dashboard-stat-card">
           <Coins className="w-6 h-6 text-blue-500" />
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Your Tokens</p>
@@ -365,7 +365,7 @@ const ArtistDashboard = () => {
             </p>
           </div>
         </div>
-        <div className="stat-card">
+        <div className="dashboard-stat-card">
           <Users className="w-6 h-6 text-purple-500" />
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Total Holders</p>
@@ -374,7 +374,7 @@ const ArtistDashboard = () => {
             </p>
           </div>
         </div>
-        <div className="stat-card">
+        <div className="dashboard-stat-card">
           <LineChart className="w-6 h-6 text-green-500" />
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Total Amount Raised</p>
@@ -392,20 +392,20 @@ const ArtistDashboard = () => {
         </div>
         
         {isLoadingTokens ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+          <div className="dashboard-loading">
+            <Loader2 className="dashboard-loading-icon" />
           </div>
         ) : artistTokens?.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="dashboard-token-grid">
             {artistTokens.map((tokenAddress) => (
               <TokenCard key={tokenAddress} tokenAddress={tokenAddress} isArtistView={true} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-            <Music className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No tokens yet</h3>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">
+          <div className="dashboard-empty-state">
+            <Music className="dashboard-empty-icon" />
+            <h3 className="dashboard-empty-title">No tokens yet</h3>
+            <p className="dashboard-empty-description">
               Create your first music token to start earning royalties
             </p>
             <Button 

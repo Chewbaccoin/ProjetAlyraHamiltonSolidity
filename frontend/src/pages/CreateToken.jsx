@@ -139,8 +139,8 @@ const CreateToken = () => {
       <main className="page-main">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="create-token-wrapper">
-            <div className="create-token-header" className="create-token-title-section">
-              <div id="create-token-icon" className="create-token-icon-wrapper">
+            <div className="create-token-header">
+              <div className="create-token-icon-wrapper">
                 <Music className="w-full h-full" />
               </div>
               <div>
