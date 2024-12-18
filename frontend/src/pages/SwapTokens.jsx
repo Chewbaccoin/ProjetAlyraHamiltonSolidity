@@ -868,7 +868,7 @@ const SwapTokens = () => {
                       Liquidity Pool
                     </CardTitle>
                     <CardDescription className="text-base text-gray-400">
-                      Provide liquidity to earn trading fees
+                      Provide liquidity to earn trading fees. One token must be DAI.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -1296,7 +1296,7 @@ const SwapTokens = () => {
                       Liquidity Pool
                     </CardTitle>
                     <CardDescription className="text-base text-gray-400">
-                      Provide liquidity to earn trading fees
+                      Provide liquidity to earn trading fees. One token must be DAI.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -1724,7 +1724,7 @@ const SwapTokens = () => {
                       Liquidity Pool
                     </CardTitle>
                     <CardDescription className="text-base text-gray-400">
-                      Provide liquidity to earn trading fees
+                      Provide liquidity to earn trading fees. One token must be DAI.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -2151,7 +2151,7 @@ const SwapTokens = () => {
                     Liquidity Pool
                   </CardTitle>
                   <CardDescription className="text-base text-gray-400">
-                    Provide liquidity to earn trading fees
+                    Provide liquidity to earn trading fees. One token must be DAI.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
