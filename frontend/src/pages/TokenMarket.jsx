@@ -48,7 +48,18 @@ const TokenCard = ({ tokenAddress, searchTerm, showOnlyAvailable, onBuyClick }) 
     functionName: 'totalSupply',
   });
 
+  const { data: availableSupply } = useReadContract({
+    address: tokenAddress,
+    abi: CONTRACTS?.RoyaltyToken?.abi,
+    functionName: 'balanceOf',
+    args: [tokenAddress],
+  });
+
   const { isConnected } = useAccount();
+
+  const circulatingSupply = totalSupply && availableSupply 
+    ? formatUnits(totalSupply - availableSupply, 18)
+    : "N/A";
 
   if (showOnlyAvailable && !isTokenListed) {
     return null;
@@ -75,9 +86,17 @@ const TokenCard = ({ tokenAddress, searchTerm, showOnlyAvailable, onBuyClick }) 
           <span>Royalties</span>
           <span>{tokenRoyaltyInfo ? `${(Number(tokenRoyaltyInfo[1]) / 100).toFixed(2)}%` : "N/A"}</span>
         </div>
-        <div className="flex justify-between">
-          <span>Supply</span>
+        <div className="flex justify-between" title="Total number of tokens that exist for this royalty token">
+          <span>Total Supply</span>
           <span>{totalSupply ? formatUnits(totalSupply, 18) : "N/A"}</span>
+        </div>
+        <div className="flex justify-between" title="Number of tokens currently held by other users">
+          <span>Circulating Supply</span>
+          <span>{circulatingSupply}</span>
+        </div>
+        <div className="flex justify-between" title="Number of tokens available for purchase">
+          <span>Available Supply</span>
+          <span>{availableSupply ? formatUnits(availableSupply, 18) : "N/A"}</span>
         </div>
       </div>
 

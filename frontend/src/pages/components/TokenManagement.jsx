@@ -12,6 +12,7 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
   const [newPrice, setNewPrice] = useState('');
   const [royaltyAmount, setRoyaltyAmount] = useState('');
   const [isListed, setIsListed] = useState(false);
+  const [listingStatus, setListingStatus] = useState('');
 
   const { writeContract: listForSale, data: listData } = useWriteContract();
 
@@ -27,9 +28,24 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
     functionName: 'isListedForSale',
   });
 
-  const { isLoading: isListing } = useWaitForTransactionReceipt({
+  const result = useWaitForTransactionReceipt({
     hash: listData?.hash,
+    onSuccess(data) {
+      console.log('Transaction confirmed:', data);
+      setListingStatus('success');
+    },
+    onError(error) {
+      console.log('Transaction failed:', error);
+      setListingStatus('error');
+    }
   });
+
+  const { 
+    isLoading: isListing, 
+    isSuccess: isListingSuccess, 
+    isError: isListingError,
+    status
+  } = result;
 
   const { isLoading: isUpdating } = useWaitForTransactionReceipt({
     hash: listData?.hash,
@@ -72,6 +88,10 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
   useEffect(() => {
     setIsListed(Boolean(isListedData));
   }, [isListedData]);
+
+  useEffect(() => {
+    console.log('Current listing status:', listingStatus);
+  }, [listingStatus]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -146,10 +166,16 @@ const TokenManagement = ({ isOpen, onClose, tokenAddress, tokenName, tokenSymbol
             <div className="flex gap-2">
               <Button 
                 onClick={handleListForSale} 
-                disabled={isListed || isListing}
-                className="w-full"
+                disabled={isListed || isListing || listingStatus === 'success'}
+                className={`w-full ${
+                  listingStatus === 'success' ? 'bg-green-500 hover:bg-green-600' : 
+                  listingStatus === 'error' ? 'bg-red-500 hover:bg-red-600' : ''
+                }`}
               >
-                {isListed ? 'Already listed' : isListing ? (
+                {isListed ? 'Already listed' : 
+                 listingStatus === 'success' ? 'Token listed for sale' :
+                 listingStatus === 'error' ? 'Error at listing' :
+                 isListing ? (
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Listing...

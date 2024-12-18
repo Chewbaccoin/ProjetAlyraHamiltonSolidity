@@ -37,7 +37,7 @@ const Header = () => {
           <div className="flex items-center space-x-12">
             <div className="logo-container">
               <Music className="logo-icon" />
-              <span className="logo-text">Pump Music</span>
+              <span className="logo-text">Pump.(dot).Music</span>
             </div>
             
             <nav className="hidden md:flex space-x-8">

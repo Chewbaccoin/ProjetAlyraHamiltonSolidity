@@ -9,6 +9,8 @@ import TokenManagement from './components/TokenManagement';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import { parseEther, formatEther } from 'ethers';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/Tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/Card';
 
 // Add these utility functions at the top level, after imports
 const formatRoyaltyPercentage = (royaltyInfo) => {
@@ -33,17 +35,14 @@ const calculateUserRoyaltyShare = (totalRoyalties, userInvestment, totalInvested
   if (!totalRoyalties || !userInvestment || !totalInvested) return "0";
   
   try {
-    // Convert all values to BigInt
-    const royaltiesBig = BigInt(totalRoyalties);  // Already in wei (1e18)
-    const userInvestmentBig = BigInt(userInvestment);  // In wei (1e18)
-    const totalInvestedBig = BigInt(totalInvested);    // In wei (1e18)
+    const royaltiesBig = BigInt(totalRoyalties);
+    const userInvestmentBig = BigInt(userInvestment);
+    const totalInvestedBig = BigInt(totalInvested);
     
-    // Calculate share: (userInvestment / totalInvested) * totalRoyalties
     const share = (royaltiesBig * userInvestmentBig) / totalInvestedBig;
     
     return share.toString();
-  } catch (error) {
-    console.error('Error calculating royalty share:', error);
+  } catch {
     return "0";
   }
 };
@@ -162,7 +161,6 @@ const TokenCard = ({ tokenAddress, isArtistView }) => {
       });
 
     } catch (error) {
-      console.error('Error claiming royalties:', error);
       setClaimError(error.message);
     } finally {
       setIsTransactionPending(false);
@@ -338,25 +336,41 @@ const ArtistDashboard = () => {
     return total;
   }, 0) || 0;
 
+  // Add this new contract read for total holders
+  const { data: totalHoldersData } = useReadContracts({
+    contracts: artistTokens?.map(tokenAddress => ({
+      address: tokenAddress,
+      abi: CONTRACTS?.RoyaltyToken?.abi,
+      functionName: 'totalHolders',
+    })) || [],
+  });
+
+  // Calculate total holders
+  const totalHoldersCount = totalHoldersData?.reduce((sum, data) => {
+    if (data.status === 'success') {
+      return sum + Number(data.result);
+    }
+    return sum;
+  }, 0) || 0;
+
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-4">
-        <div className="p-3 rounded-full bg-purple-500/10">
-          <Music className="w-8 h-8 text-purple-500" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Artist Dashboard</h2>
-          <p className="text-gray-600 dark:text-gray-400">Manage your music tokens</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-3 gap-6">
         <div className="stat-card">
           <Coins className="w-6 h-6 text-blue-500" />
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Your Tokens</p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {artistTokens?.length || 0}
+            </p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <Users className="w-6 h-6 text-purple-500" />
+          <div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Total Holders</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {totalHoldersCount}
             </p>
           </div>
         </div>
@@ -382,7 +396,7 @@ const ArtistDashboard = () => {
             <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
           </div>
         ) : artistTokens?.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {artistTokens.map((tokenAddress) => (
               <TokenCard key={tokenAddress} tokenAddress={tokenAddress} isArtistView={true} />
             ))}
@@ -468,17 +482,7 @@ const InvestorDashboard = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-4">
-        <div className="p-3 rounded-full bg-green-500/10">
-          <DollarSign className="w-8 h-8 text-green-500" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Investor Dashboard</h2>
-          <p className="text-gray-600 dark:text-gray-400">Track your investments and earnings</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-3 gap-6">
         <div className="stat-card">
           <Coins className="w-6 h-6 text-blue-500" />
           <div>
@@ -506,7 +510,7 @@ const InvestorDashboard = () => {
         </div>
         
         {ownedTokens?.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {ownedTokens.map((tokenAddress) => (
               <TokenCard key={tokenAddress} tokenAddress={tokenAddress} isArtistView={false} />
             ))}
@@ -533,6 +537,7 @@ const InvestorDashboard = () => {
 
 const Dashboard = () => {
   const { address, isConnected } = useAccount();
+  const [activeTab, setActiveTab] = useState('investor');
 
   // Add isArtist check
   const { data: isArtist } = useReadContract({
@@ -542,6 +547,13 @@ const Dashboard = () => {
     args: [address],
     enabled: isConnected,
   });
+
+  useEffect(() => {
+    // Set active tab to artist if user is an artist
+    if (isArtist) {
+      setActiveTab('artist');
+    }
+  }, [isArtist]);
 
   if (!isConnected) {
     return (
@@ -565,13 +577,75 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       <Header />
-      <main className="page-main">
-        <div className="max-w-7xl mx-auto px-4 py-8 space-y-12">
-          {/* Artist Section */}
-          {isArtist && <ArtistDashboard />}
+      <main className="flex-grow">
+        <div className="max-w-[1600px] mx-auto pt-32 pb-20 px-4">
+          <h1 className="swap-title">
+            Dashboard
+          </h1>
           
-          {/* Investor Section */}
-          <InvestorDashboard />
+          {isArtist ? (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="swap-tabs-list">
+                <TabsTrigger value="artist" className="swap-tab-trigger">
+                  <Music className="h-4 w-4" />
+                  Artist
+                </TabsTrigger>
+                <TabsTrigger value="investor" className="swap-tab-trigger">
+                  <DollarSign className="h-4 w-4" />
+                  Investor
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="artist">
+                <Card className="swap-card">
+                  <div className="swap-card-gradient" />
+                  <CardHeader className="space-y-1 pb-4">
+                    <CardTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                      Artist
+                    </CardTitle>
+                    <CardDescription className="text-base text-gray-400">
+                      Manage your music tokens and track your earnings
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ArtistDashboard />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="investor">
+                <Card className="swap-card">
+                  <div className="swap-card-gradient" />
+                  <CardHeader className="space-y-1 pb-4">
+                    <CardTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                      Investor
+                    </CardTitle>
+                    <CardDescription className="text-base text-gray-400">
+                      Track your investments and earnings
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <InvestorDashboard />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <Card className="swap-card">
+              <div className="swap-card-gradient" />
+              <CardHeader className="space-y-1 pb-4">
+                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                  Investor
+                </CardTitle>
+                <CardDescription className="text-base text-gray-400">
+                  Track your investments and earnings
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <InvestorDashboard />
+              </CardContent>
+            </Card>
+          )}
         </div>
       </main>
       <Footer />
