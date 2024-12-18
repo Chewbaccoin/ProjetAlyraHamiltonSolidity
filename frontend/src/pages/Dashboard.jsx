@@ -35,12 +35,17 @@ const calculateUserRoyaltyShare = (totalRoyalties, userInvestment, totalInvested
   if (!totalRoyalties || !userInvestment || !totalInvested) return "0";
   
   try {
+    // Ensure we're working with BigInt for maximum precision
     const royaltiesBig = BigInt(totalRoyalties);
     const userInvestmentBig = BigInt(userInvestment);
     const totalInvestedBig = BigInt(totalInvested);
     
-    const share = (royaltiesBig * userInvestmentBig) / totalInvestedBig;
+    // Add a check for single investor case
+    if (userInvestmentBig === totalInvestedBig) {
+      return totalRoyalties;
+    }
     
+    const share = (royaltiesBig * userInvestmentBig) / totalInvestedBig;
     return share.toString();
   } catch {
     return "0";
@@ -173,6 +178,29 @@ const TokenCard = ({ tokenAddress, isArtistView }) => {
   const hasBalance = balance && BigInt(balance) > BigInt(0);
 
   const isButtonDisabled = isClaimingRoyalties || isTransactionPending;
+
+  // Add useEffect to log claimable royalties
+  useEffect(() => {
+    if (hasRoyalties && hasBalance && userRoyaltyShare) {
+      // Log raw values for debugging
+      console.log('Raw userInvestment:', userInvestment.toString());
+      console.log('Raw totalAmountRaised:', totalAmountRaised.toString());
+      
+      // Ensure exact comparison by using BigInt
+      const investmentShare = totalAmountRaised && userInvestment
+        ? (BigInt(userInvestment) === BigInt(totalAmountRaised) 
+            ? 100 
+            : (Number(userInvestment) * 100 / Number(totalAmountRaised)))
+        : 0;
+
+      console.log(`Token: ${tokenName} (${tokenAddress})`);
+      console.log(`Investor: ${address}`);
+      console.log(`Total Undistributed Royalties: ${formatEther(royaltyInfo[2])} ETH`);
+      console.log(`Claimable Royalties: ${formatEther(userRoyaltyShare)} ETH`);
+      console.log(`Investment Share: ${investmentShare.toFixed(2)}%`);
+      console.log('------------------------');
+    }
+  }, [tokenName, tokenAddress, address, hasRoyalties, hasBalance, userRoyaltyShare, royaltyInfo, userInvestment, totalAmountRaised]);
 
   return (
     <div className="token-card">
@@ -454,6 +482,7 @@ const InvestorDashboard = () => {
       functionName: 'getTotalRoyaltiesClaimed',
       args: [address],
     })) || [],
+    watch: true,
   });
 
   // Update ownedTokens when balances are fetched
@@ -472,7 +501,9 @@ const InvestorDashboard = () => {
     if (claimedRoyaltiesData) {
       const total = claimedRoyaltiesData.reduce((sum, data) => {
         if (data.status === 'success') {
-          return sum + Number(formatEther(data.result));
+          // Convert BigInt to string before converting to number to avoid precision loss
+          const claimed = formatEther(data.result);
+          return sum + Number(claimed);
         }
         return sum;
       }, 0);
