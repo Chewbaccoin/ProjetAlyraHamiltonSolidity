@@ -13,10 +13,16 @@ import Dashboard from './pages/Dashboard'
 import Admin from './pages/Admin'
 import '@rainbow-me/rainbowkit/styles.css'
 import './App.css'
+import { useEffect } from 'react'
 
 const queryClient = new QueryClient()
 
 function App() {
+
+  useEffect(() => {
+    document.title = "Pump.Music"
+  }, [])
+  
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
       <WagmiProvider config={config}>
