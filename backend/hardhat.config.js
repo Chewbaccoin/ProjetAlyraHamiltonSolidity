@@ -4,6 +4,8 @@ require("@openzeppelin/hardhat-upgrades");
 require("dotenv").config();
 
 const PRIVATE_KEY_LOCALHOST_HARDHAT = process.env.PRIVATE_KEY_LOCALHOST_HARDHAT || "0000000000000000000000000000000000000000000000000000000000000000";
+const PRIVATE_KEY_BASE_SEPOLIA = process.env.PRIVATE_KEY_BASE_SEPOLIA || "0000000000000000000000000000000000000000000000000000000000000000";
+const PRIVATE_KEY_BASE_MAINNET = process.env.PRIVATE_KEY_BASE_MAINNET || "0000000000000000000000000000000000000000000000000000000000000000";
 const INFURA_API_KEY = process.env.INFURA_API_KEY || "";
 const BASESCAN_API_KEY = process.env.BASESCAN_API_KEY || "";
 
@@ -30,22 +32,22 @@ module.exports = {
         },
         baseSepolia: {
             url: `https://base-sepolia.infura.io/v3/${INFURA_API_KEY}`,
-            accounts: [process.env.PRIVATE_KEY_BASE_SEPOLIA],
+            accounts: [PRIVATE_KEY_BASE_SEPOLIA],
             chainId: 84532,
             verify: {
               etherscan: {
                 apiUrl: "https://api-sepolia.basescan.org",
-                apiKey: process.env.BASESCAN_API_KEY
+                apiKey: BASESCAN_API_KEY
               }
             }
         },
         mainnet: {
             url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
-            accounts: [process.env.PRIVATE_KEY_BASE_MAINNET],
+            accounts: [PRIVATE_KEY_BASE_MAINNET],
             verify: {
               etherscan: {
                 apiUrl: "https://api.basescan.org",
-                apiKey: process.env.BASESCAN_API_KEY
+                apiKey: BASESCAN_API_KEY
               }
             }
         }
