@@ -2,6 +2,11 @@
 
 A decentralized marketplace revolutionizing music monetization by enabling musicians and producers to tokenize and trade their music royalties through blockchain technology.
 
+## Project Documentation (Carnet de projet "Alyra") 
+
+Oral presentation project notebook (🇫🇷) : [Carnet de projet](https://github.com/Chewbaccoin/ProjetAlyra/blob/main/Carnet%20de%20Projet%20RS6515%20-%20Nicolas%20Belleng%C3%A9.pdf).
+
+
 ## Overview
 
 Pump.Music is a Web3 platform that allows:
