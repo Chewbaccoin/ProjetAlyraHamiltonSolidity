@@ -1,7 +1,7 @@
 // src/contracts/index.js
 export const CONTRACTS = {
     ArtistSBT: {
-      address: "0x2E5405E4aF4ad8089E3262D2E1EE9B8b5Eb45bA8",
+      address: "0xD1c7c80cac536E27B3D1aBA24f51D3C46eDC1394",
       abi: [
         {
           "inputs": [],
@@ -691,7 +691,7 @@ export const CONTRACTS = {
       ]
     },
     TokenFactory: {
-      address: "0xBd607dAbD6B803d008897538b4Dd17f7bcde158A",
+      address: "0x8efB201B7043b006E8d7332969EBEEE6247E01E5",
       abi: [
         {
           "inputs": [
@@ -1720,7 +1720,7 @@ export const CONTRACTS = {
       ]
     },
     PumpMusicSwap: {
-      address: "0x6bfce361651796e3276b9612D3bD031887a79c73",
+      address: "0x4b39b010000C036F7293d7801989c27B695579a4",
       abi: [
         {
           "inputs": [
@@ -2657,7 +2657,7 @@ export const CONTRACTS = {
       ]
     },
     DAI: {
-      address: "0xA0028663180AdcFdeA10d67c18285a9000ad1f4C",
+      address: "0xd3ACff47FAB858B9F1e78Dc14084F8001c84a077",
       abi: [
         {
           "inputs": [],
@@ -3068,7 +3068,7 @@ export const CONTRACTS = {
       
     },
     USDC: {
-      address: "0x20785Bf029da8C9Ab86942D6cdB900e9Ae708eEa",
+      address: "0x72bF30E68da8259b602a90843061E5678C6dB96e",
       abi:  [
         {
           "inputs": [],
