@@ -9,7 +9,7 @@ Oral presentation project notebook (🇫🇷) : [Carnet de projet](https://githu
 
 ## Overview
 
-Pump.Music is a Web3 platform that allows:
+Pump.Music (pronounced pump dot music) is a Web3 platform that allows:
 - Musicians and producers to tokenize their royalties into ERC-20 tokens
 - Investors to buy, sell, and trade music royalty tokens
 - Automated distribution of royalties through smart contracts
